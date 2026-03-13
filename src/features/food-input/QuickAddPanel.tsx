@@ -17,7 +17,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
   const [calError, setCalError] = useState('')
 
   function handleSubmit() {
-    const cal = parseInt(calories, 10)
+    const cal = Math.round(parseFloat(calories))
     if (!calories || isNaN(cal) || cal <= 0) {
       setCalError('Enter a calorie amount')
       return

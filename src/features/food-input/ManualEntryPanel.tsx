@@ -19,7 +19,7 @@ export function ManualEntryPanel({ onConfirm }: FoodInputContext) {
   function handleSubmit() {
     const errs: Record<string, string> = {}
     if (!name.trim()) errs.name = 'Required'
-    const cal = parseInt(calories, 10)
+    const cal = Math.round(parseFloat(calories))
     if (!calories || isNaN(cal) || cal <= 0) errs.calories = 'Enter a value > 0'
     setErrors(errs)
     if (Object.keys(errs).length > 0) return

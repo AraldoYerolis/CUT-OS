@@ -1,18 +1,20 @@
 .container {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   min-height: 100dvh;
   min-height: 100vh;
-  padding: var(--space-10) var(--space-6);
-  padding-top: calc(var(--safe-top) + var(--space-16));
+  padding: var(--space-6);
+  padding-top: calc(var(--safe-top) + var(--space-10));
   padding-bottom: calc(var(--safe-bottom) + var(--space-8));
+  gap: var(--space-8);
 }
+
+/* ─── Step 1 hero ─── */
 
 .hero {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .wordmark {
@@ -20,10 +22,6 @@
   font-weight: var(--weight-bold);
   color: var(--color-text-primary);
   letter-spacing: -0.03em;
-}
-
-.wordmark span {
-  color: var(--color-accent);
 }
 
 .tagline {
@@ -34,14 +32,100 @@
   font-weight: var(--weight-medium);
 }
 
-.actions {
+/* ─── Step header (steps 2 & 3) ─── */
+
+.stepHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-10);
+}
+
+.stepTitle {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+}
+
+.stepSub {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* ─── Step indicator dots ─── */
+
+.stepDots {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  transition: background var(--transition-base), width var(--transition-base);
+}
+
+.dotActive {
+  background: var(--color-accent);
+  width: 20px;
+}
+
+/* ─── Content area ─── */
+
+.body {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  flex: 1;
 }
 
-.note {
+/* ─── Review card (step 3) ─── */
+
+.reviewCard {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.reviewRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reviewLabel {
   font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  text-align: center;
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-medium);
+}
+
+.reviewValue {
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.reviewDivider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--space-1) 0;
+}
+
+/* ─── Action buttons ─── */
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }

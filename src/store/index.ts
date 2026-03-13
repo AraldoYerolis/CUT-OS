@@ -55,6 +55,9 @@ interface AppActions {
   // Profile / targets
   updateProfile(name: string, targets: MacroTargets): void
 
+  // Log
+  addLogEntry(entry: LoggedFood): void
+
   // Food input sheet
   openFoodInput(mode?: FoodInputMode): void
   closeFoodInput(): void
@@ -73,7 +76,7 @@ const idbStorage = createJSONStorage(() => repository)
 
 const initialFoodInput: FoodInputState = {
   isOpen: false,
-  mode: 'recent',
+  mode: 'manual',
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────
@@ -104,11 +107,17 @@ export const useStore = create<AppStore>()(
           user: state.user ? { ...state.user, name, targets } : state.user,
         })),
 
-      openFoodInput: (mode = 'recent') =>
+      addLogEntry: (entry) =>
+        set((state) => {
+          const existing = state.logs[entry.date] ?? []
+          return { logs: { ...state.logs, [entry.date]: [...existing, entry] } }
+        }),
+
+      openFoodInput: (mode = 'manual') =>
         set({ foodInput: { isOpen: true, mode } }),
 
       closeFoodInput: () =>
-        set({ foodInput: { isOpen: false, mode: 'recent' } }),
+        set({ foodInput: { isOpen: false, mode: 'manual' } }),
 
       setFoodInputMode: (mode) =>
         set((state) => ({ foodInput: { ...state.foodInput, mode } })),

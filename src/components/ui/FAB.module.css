@@ -1,0 +1,24 @@
+.fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  border-radius: var(--radius-full);
+  background-color: var(--color-accent);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-fab);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.fab:active {
+  transform: scale(0.93);
+  box-shadow: none;
+}
+
+/* Icon inside FAB */
+.icon {
+  width: 24px;
+  height: 24px;
+}

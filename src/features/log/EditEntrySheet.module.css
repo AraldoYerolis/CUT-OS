@@ -1,8 +1,8 @@
 .sheetContent {
   display: flex;
   flex-direction: column;
-  height: 70dvh;
-  height: 70vh;
+  height: 70vh;    /* fallback — legacy browsers */
+  height: 70dvh;   /* dynamic viewport — wins on modern iOS/Android */
 }
 
 .panelArea {
@@ -22,6 +22,10 @@
 /* ─── Footer with save + delete ─── */
 
 .footer {
+  /* Sticky ensures footer stays visible even if Sheet.body scrolls */
+  position: sticky;
+  bottom: 0;
+  background: var(--color-surface);
   flex-shrink: 0;
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--color-border-subtle);

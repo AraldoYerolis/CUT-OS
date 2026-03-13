@@ -1,7 +1,10 @@
-import { useStore } from '../../store'
+import { useState, useEffect } from 'react'
+import { useStore, selectActiveDate } from '../../store'
 import { Sheet } from '../../components/ui/Sheet'
 import { getReadyModes, requestInput } from '../../services/foodInput/FoodInputService'
-import type { FoodItem, MealSlot } from '../../domain/types'
+import { computeMacros } from '../../domain/calculations'
+import { generateId } from '../../utils/id'
+import type { FoodItem, LoggedFood, MealSlot } from '../../domain/types'
 import styles from './FoodInputSheet.module.css'
 
 interface FoodInputSheetProps {
@@ -12,16 +15,32 @@ interface FoodInputSheetProps {
 /**
  * Food Input Sheet — the unified entry point for all food logging modes.
  * Only renders tabs for modes where isReady: true.
- * Phase 1: tab chrome only. Panels are stubs until Phase 4.
  */
 export function FoodInputSheet({ isOpen, onClose }: FoodInputSheetProps) {
   const activeMode = useStore((s) => s.foodInput.mode)
   const setMode = useStore((s) => s.setFoodInputMode)
+  const addLogEntry = useStore((s) => s.addLogEntry)
+  const activeDate = useStore(selectActiveDate)
+
+  // Increment on each open to force panel remount → clears form state
+  const [panelKey, setPanelKey] = useState(0)
+  useEffect(() => {
+    if (isOpen) setPanelKey((k) => k + 1)
+  }, [isOpen])
 
   const readyModes = getReadyModes()
 
-  function handleConfirm(_food: FoodItem, _quantity: number, _slot: MealSlot) {
-    // Phase 4: dispatch to log store
+  function handleConfirm(food: FoodItem, quantity: number, slot: MealSlot) {
+    const entry: LoggedFood = {
+      id: generateId(),
+      date: activeDate,
+      foodItem: food,
+      quantityG: quantity,
+      macros: computeMacros(food.macros, quantity),
+      mealSlot: slot,
+      loggedAt: new Date().toISOString(),
+    }
+    addLogEntry(entry)
     onClose()
   }
 
@@ -42,7 +61,7 @@ export function FoodInputSheet({ isOpen, onClose }: FoodInputSheetProps) {
                 className={[
                   styles.tab,
                   activeMode === handler.mode ? styles.tabActive : '',
-                ].join(' ')}
+                ].filter(Boolean).join(' ')}
                 onClick={() => setMode(handler.mode)}
               >
                 {handler.label}
@@ -51,8 +70,8 @@ export function FoodInputSheet({ isOpen, onClose }: FoodInputSheetProps) {
           </div>
         )}
 
-        {/* Active panel */}
-        <div className={styles.panelArea} role="tabpanel">
+        {/* Active panel — keyed on open count to reset form on each open */}
+        <div className={styles.panelArea} role="tabpanel" key={panelKey}>
           {activeHandler ? (
             <activeHandler.Panel
               onConfirm={handleConfirm}
@@ -61,9 +80,6 @@ export function FoodInputSheet({ isOpen, onClose }: FoodInputSheetProps) {
           ) : (
             <div className={styles.placeholderPanel}>
               <p className={styles.placeholderTitle}>Add food</p>
-              <p className={styles.placeholderNote}>
-                Food input panels coming in Phase 4
-              </p>
             </div>
           )}
         </div>

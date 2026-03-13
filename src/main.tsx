@@ -4,6 +4,7 @@ import './styles/reset.css'
 import './styles/tokens.css'
 import './styles/global.css'
 import { App } from './app/App'
+import './features/food-input/registerHandlers'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element not found')

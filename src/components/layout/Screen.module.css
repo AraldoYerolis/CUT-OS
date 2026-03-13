@@ -1,0 +1,19 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  /* Account for status bar on iOS */
+  padding-top: var(--safe-top);
+}
+
+.scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Content area accounts for tab nav height */
+.withNav {
+  padding-bottom: var(--tab-nav-total);
+}

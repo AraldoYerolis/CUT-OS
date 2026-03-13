@@ -10,6 +10,7 @@ import type {
   MealTemplate,
   AppSettings,
   FoodInputMode,
+  MacroTargets,
 } from '../domain/types'
 
 // ─── State shape ──────────────────────────────────────────────────────────
@@ -47,6 +48,12 @@ export interface AppState {
 
 interface AppActions {
   setHydrated(hydrated: boolean): void
+
+  // Onboarding
+  completeOnboarding(profile: UserProfile): void
+
+  // Profile / targets
+  updateProfile(name: string, targets: MacroTargets): void
 
   // Food input sheet
   openFoodInput(mode?: FoodInputMode): void
@@ -89,6 +96,14 @@ export const useStore = create<AppStore>()(
       // Actions
       setHydrated: (hydrated) => set({ isHydrated: hydrated }),
 
+      completeOnboarding: (profile) =>
+        set({ user: profile, onboardingComplete: true }),
+
+      updateProfile: (name, targets) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, name, targets } : state.user,
+        })),
+
       openFoodInput: (mode = 'recent') =>
         set({ foodInput: { isOpen: true, mode } }),
 
@@ -101,19 +116,25 @@ export const useStore = create<AppStore>()(
     {
       name: 'cutos:state',
       storage: idbStorage,
-      // Exclude transient UI state from persistence
+      // Exclude transient UI state and session-only values from persistence
       partialize: (state) => ({
         user: state.user,
         onboardingComplete: state.onboardingComplete,
         logs: state.logs,
-        activeDate: state.activeDate,
+        // activeDate intentionally excluded — always reset to today on launch
         favorites: state.favorites,
         recents: state.recents,
         templates: state.templates,
         settings: state.settings,
       }),
       onRehydrateStorage: () => (state) => {
-        state?.setHydrated(true)
+        if (state) {
+          state.setHydrated(true)
+        } else {
+          // IDB failed — prevent app hanging on loading screen
+          // Safe: this callback fires async, useStore is fully assigned by then
+          useStore.getState().setHydrated(true)
+        }
       },
     }
   )

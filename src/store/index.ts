@@ -57,6 +57,8 @@ interface AppActions {
 
   // Log
   addLogEntry(entry: LoggedFood): void
+  updateLogEntry(entry: LoggedFood): void
+  deleteLogEntry(id: string, date: string): void
 
   // Food input sheet
   openFoodInput(mode?: FoodInputMode): void
@@ -111,6 +113,28 @@ export const useStore = create<AppStore>()(
         set((state) => {
           const existing = state.logs[entry.date] ?? []
           return { logs: { ...state.logs, [entry.date]: [...existing, entry] } }
+        }),
+
+      updateLogEntry: (entry) =>
+        set((state) => {
+          const existing = state.logs[entry.date] ?? []
+          return {
+            logs: {
+              ...state.logs,
+              [entry.date]: existing.map((e) => (e.id === entry.id ? entry : e)),
+            },
+          }
+        }),
+
+      deleteLogEntry: (id, date) =>
+        set((state) => {
+          const existing = state.logs[date] ?? []
+          return {
+            logs: {
+              ...state.logs,
+              [date]: existing.filter((e) => e.id !== id),
+            },
+          }
         }),
 
       openFoodInput: (mode = 'manual') =>

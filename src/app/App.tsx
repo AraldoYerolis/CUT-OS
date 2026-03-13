@@ -1,4 +1,3 @@
-import { BrowserRouter } from 'react-router-dom'
 import { useStore, selectIsHydrated } from '../store'
 import { Router } from './Router'
 import styles from './App.module.css'
@@ -14,9 +13,5 @@ export function App() {
     return <LoadingScreen />
   }
 
-  return (
-    <BrowserRouter>
-      <Router />
-    </BrowserRouter>
-  )
+  return <Router />
 }

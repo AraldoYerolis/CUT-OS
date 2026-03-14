@@ -18,8 +18,11 @@ export function SettingsScreen() {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
-  // Sync form if a new user profile is loaded (e.g. first hydration)
+  // Sync form whenever the canonical store user changes.
+  // Using [user] (not [user?.id]) ensures the form always mirrors the stored
+  // state — including immediately after updateProfile commits the new values.
   useEffect(() => {
     if (user) {
       setName(user.name)
@@ -28,7 +31,7 @@ export function SettingsScreen() {
       setCarbs(String(user.targets.carbs))
       setFat(String(user.targets.fat))
     }
-  }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function markDirty() {
     setSaved(false)
@@ -49,15 +52,31 @@ export function SettingsScreen() {
     return Object.keys(errs).length === 0
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!validate()) return
-    updateProfile(name.trim(), {
+
+    const newName = name.trim()
+    const newTargets = {
       calories: parseInt(calories, 10),
       protein: parseInt(protein, 10),
       carbs: parseInt(carbs, 10),
       fat: parseInt(fat, 10),
-    })
-    setSaved(true)
+    }
+
+    setIsSaving(true)
+    setErrors({})
+    try {
+      // updateProfile updates in-memory state synchronously, then returns the
+      // persist middleware's async IDB setItem() Promise (typed void but is a
+      // Promise at runtime). Awaiting via Promise.resolve() ensures we only
+      // show "Saved" once the storage write has actually committed.
+      await Promise.resolve(updateProfile(newName, newTargets))
+      setSaved(true)
+    } catch {
+      setErrors({ _save: 'Failed to save. Please try again.' })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -116,9 +135,11 @@ export function SettingsScreen() {
           />
         </section>
 
+        {errors._save && <p className={styles.saveError}>{errors._save}</p>}
+
         <div className={styles.saveRow}>
-          <Button variant="primary" size="lg" full onClick={handleSave}>
-            {saved ? 'Saved' : 'Save Changes'}
+          <Button variant="primary" size="lg" full onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving…' : saved ? 'Saved' : 'Save Changes'}
           </Button>
           {saved && <p className={styles.savedNote}>Changes saved</p>}
         </div>

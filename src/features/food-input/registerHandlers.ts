@@ -4,6 +4,7 @@ import { FavoritesPanel } from './FavoritesPanel'
 import { TemplatesPanel } from './TemplatesPanel'
 import { ManualEntryPanel } from './ManualEntryPanel'
 import { QuickAddPanel } from './QuickAddPanel'
+import { ScanPanel } from './ScanPanel'
 
 registerFoodInputHandler({
   mode: 'recent',
@@ -38,4 +39,11 @@ registerFoodInputHandler({
   label: 'Quick Add',
   isReady: true,
   Panel: QuickAddPanel,
+})
+
+registerFoodInputHandler({
+  mode: 'scan',
+  label: 'Scan',
+  isReady: true,
+  Panel: ScanPanel,
 })

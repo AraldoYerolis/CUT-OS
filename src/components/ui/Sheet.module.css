@@ -23,14 +23,14 @@
   box-shadow: var(--shadow-sheet);
   transform: translateY(100%);
   transition: transform var(--transition-sheet);
-  /* fallback first, dvh override second — dvh accounts for browser chrome */
+  /* Progressive max-height: fallback → dvh → conservative svh minimum */
   max-height: 92vh;
   max-height: 92dvh;
+  max-height: min(92dvh, 92svh);
   display: flex;
   flex-direction: column;
-  z-index: 101;
-  /* overflow:hidden clips children at max-height boundary and creates BFC */
   overflow: hidden;
+  z-index: 101;
   padding-bottom: var(--safe-bottom);
 }
 
@@ -52,13 +52,20 @@
   background: var(--color-border);
 }
 
+/* Scrollable content — constrained by flex, never bleeds past sheet boundary */
 .body {
-  flex: 1;
-  /* min-height:0 is required — without it, flex items default to
-     min-height:auto and expand to fit content, preventing overflow-y:auto
-     from ever triggering. This was the primary cause of the hidden button. */
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+}
+
+/* Pinned action footer — flex sibling of .body, never inside the scroll container.
+   flex-shrink:0 keeps it visible even when .body content is tall.
+   z-index ensures it layers above any content painted near the bottom. */
+.sheetFooter {
+  flex-shrink: 0;
+  z-index: 5;
+  position: relative;
 }

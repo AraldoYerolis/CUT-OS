@@ -5,17 +5,13 @@ interface SheetProps {
   isOpen: boolean
   onClose: () => void
   children?: ReactNode
+  /** Rendered outside the scrollable body, pinned to the sheet bottom */
+  footer?: ReactNode
   /** Accessible label for the sheet dialog */
   label?: string
 }
 
-/**
- * Bottom sheet component.
- * Phase 1: open/close with CSS transition + backdrop dismiss.
- * Drag-to-close gesture will be added in Phase 4.
- */
-export function Sheet({ isOpen, onClose, children, label = 'Sheet' }: SheetProps) {
-  // Prevent body scroll when sheet is open
+export function Sheet({ isOpen, onClose, children, footer, label = 'Sheet' }: SheetProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -29,14 +25,12 @@ export function Sheet({ isOpen, onClose, children, label = 'Sheet' }: SheetProps
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className={[styles.backdrop, isOpen ? styles.backdropOpen : ''].join(' ')}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Sheet */}
       <div
         className={[styles.sheet, isOpen ? styles.sheetOpen : ''].join(' ')}
         role="dialog"
@@ -46,7 +40,14 @@ export function Sheet({ isOpen, onClose, children, label = 'Sheet' }: SheetProps
         <div className={styles.handle} aria-hidden="true">
           <div className={styles.handleBar} />
         </div>
+
+        {/* Scrollable content area */}
         <div className={styles.body}>{children}</div>
+
+        {/* Pinned footer — outside .body, never scrolls */}
+        {footer != null && (
+          <div className={styles.sheetFooter}>{footer}</div>
+        )}
       </div>
     </>
   )

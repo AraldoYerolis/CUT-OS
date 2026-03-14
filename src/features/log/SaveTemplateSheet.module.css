@@ -1,8 +1,12 @@
-.panel {
+/* ─── Scroll content — direct child of Sheet.body ─── */
+
+.scrollContent {
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4);
+  /* bottom padding so last list item isn't flush against the sticky footer */
+  padding-bottom: var(--space-6);
 }
 
 /* ─── Name field ─── */
@@ -125,16 +129,16 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ─── Footer ─── */
+/* ─── Footer — sticky, direct child of Sheet.body ───
+   No negative margins. Sticky inside overflow-y:auto works on all
+   Safari versions only when margins are not negative. The concrete
+   resolved height of .body (flex:1 inside the fixed-height .sheet)
+   gives Safari a defined scroll viewport for bottom:0 to anchor to. */
 
 .footer {
   position: sticky;
   bottom: 0;
   background: var(--color-surface);
-  padding-top: var(--space-3);
-  padding-bottom: calc(var(--space-3) + var(--safe-bottom));
   border-top: 1px solid var(--color-border-subtle);
-  margin: 0 calc(var(--space-4) * -1);
-  padding-left: var(--space-4);
-  padding-right: var(--space-4);
+  padding: var(--space-3) var(--space-4) calc(var(--space-4) + var(--safe-bottom));
 }

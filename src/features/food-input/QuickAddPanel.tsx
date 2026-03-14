@@ -41,55 +41,57 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
   }
 
   return (
-    <div className={styles.panel}>
-      <p className={styles.hint}>Fast macro entry — nothing saved to your food library.</p>
-      <Input
-        label="Calories"
-        value={calories}
-        onChange={(e) => setCalories(e.target.value)}
-        inputMode="numeric"
-        pattern="[0-9]*"
-        error={calError}
-        autoFocus
-        rightElement={<span>kcal</span>}
-      />
-      <Input
-        label="Protein"
-        value={protein}
-        onChange={(e) => setProtein(e.target.value)}
-        inputMode="decimal"
-        placeholder="0"
-        rightElement={<span>g</span>}
-      />
-      <Input
-        label="Carbs"
-        value={carbs}
-        onChange={(e) => setCarbs(e.target.value)}
-        inputMode="decimal"
-        placeholder="0"
-        rightElement={<span>g</span>}
-      />
-      <Input
-        label="Fat"
-        value={fat}
-        onChange={(e) => setFat(e.target.value)}
-        inputMode="decimal"
-        placeholder="0"
-        rightElement={<span>g</span>}
-      />
-      <Input
-        label="Label (optional)"
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
-        placeholder="e.g. Protein shake"
-        autoComplete="off"
-      />
-      <MealSlotPicker value={slot} onChange={setSlot} />
+    <>
+      <div className={styles.scrollContent}>
+        <p className={styles.hint}>Fast macro entry — nothing saved to your food library.</p>
+        <Input
+          label="Calories"
+          value={calories}
+          onChange={(e) => setCalories(e.target.value)}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          error={calError}
+          autoFocus
+          rightElement={<span>kcal</span>}
+        />
+        <Input
+          label="Protein"
+          value={protein}
+          onChange={(e) => setProtein(e.target.value)}
+          inputMode="decimal"
+          placeholder="0"
+          rightElement={<span>g</span>}
+        />
+        <Input
+          label="Carbs"
+          value={carbs}
+          onChange={(e) => setCarbs(e.target.value)}
+          inputMode="decimal"
+          placeholder="0"
+          rightElement={<span>g</span>}
+        />
+        <Input
+          label="Fat"
+          value={fat}
+          onChange={(e) => setFat(e.target.value)}
+          inputMode="decimal"
+          placeholder="0"
+          rightElement={<span>g</span>}
+        />
+        <Input
+          label="Label (optional)"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="e.g. Protein shake"
+          autoComplete="off"
+        />
+        <MealSlotPicker value={slot} onChange={setSlot} />
+      </div>
       <div className={styles.footer}>
         <Button variant="primary" size="lg" full onClick={handleSubmit}>
           Quick Log
         </Button>
       </div>
-    </div>
+    </>
   )
 }

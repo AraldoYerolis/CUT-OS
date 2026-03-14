@@ -1,8 +1,12 @@
 .sheetContent {
   display: flex;
   flex-direction: column;
-  height: 70dvh;
+  /* fallback first, dvh override second */
   height: 70vh;
+  height: 70dvh;
+  /* overflow:hidden prevents panelArea from expanding sheetContent
+     beyond its declared height when content is tall */
+  overflow: hidden;
 }
 
 .tabBar {
@@ -39,6 +43,9 @@
 
 .panelArea {
   flex: 1;
+  /* min-height:0 constrains this flex item to its allocated height so
+     overflow-y:auto actually triggers when panel content is tall */
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;

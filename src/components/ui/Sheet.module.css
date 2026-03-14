@@ -23,12 +23,14 @@
   box-shadow: var(--shadow-sheet);
   transform: translateY(100%);
   transition: transform var(--transition-sheet);
+  /* fallback first, dvh override second — dvh accounts for browser chrome */
+  max-height: 92vh;
   max-height: 92dvh;
-  max-height: 92vh; /* fallback */
   display: flex;
   flex-direction: column;
   z-index: 101;
-  /* Ensure sheet sits above iOS safe area */
+  /* overflow:hidden clips children at max-height boundary and creates BFC */
+  overflow: hidden;
   padding-bottom: var(--safe-bottom);
 }
 
@@ -52,6 +54,10 @@
 
 .body {
   flex: 1;
+  /* min-height:0 is required — without it, flex items default to
+     min-height:auto and expand to fit content, preventing overflow-y:auto
+     from ever triggering. This was the primary cause of the hidden button. */
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;

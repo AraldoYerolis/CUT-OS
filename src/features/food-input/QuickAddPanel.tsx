@@ -1,20 +1,67 @@
 import { useState } from 'react'
+import { useStore, selectUser } from '../../store'
 import type { FoodInputContext } from '../../services/foodInput/FoodInputService'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { MealSlotPicker } from './MealSlotPicker'
 import { generateId } from '../../utils/id'
+import {
+  PRESET_FOOD_BY_ID,
+  DEFAULT_QUICK_PRESET_IDS,
+  type PresetFood,
+} from '../../domain/foodPresets'
 import type { FoodItem, MealSlot } from '../../domain/types'
 import styles from './QuickAddPanel.module.css'
 
 export function QuickAddPanel({ onConfirm }: FoodInputContext) {
+  const user = useStore(selectUser)
+
   const [calories, setCalories] = useState('')
-  const [protein, setProtein] = useState('')
-  const [carbs, setCarbs] = useState('')
-  const [fat, setFat] = useState('')
-  const [label, setLabel] = useState('')
-  const [slot, setSlot] = useState<MealSlot>('untagged')
+  const [protein, setProtein]   = useState('')
+  const [carbs, setCarbs]       = useState('')
+  const [fat, setFat]           = useState('')
+  const [label, setLabel]       = useState('')
+  const [slot, setSlot]         = useState<MealSlot>('untagged')
   const [calError, setCalError] = useState('')
+
+  // ─── Determine preset list from user preferences ───────────────────────
+  const presets: PresetFood[] = (() => {
+    const prefs = user?.foodPreferences
+    const ids = prefs && prefs.selectedFoods.length > 0
+      ? prefs.selectedFoods
+      : DEFAULT_QUICK_PRESET_IDS
+
+    // Filter out excluded foods (by category match against exclusion labels)
+    const excluded = new Set((prefs?.excludedFoods ?? []).map(e => e.toLowerCase()))
+    const exclusionMap: Record<string, string[]> = {
+      dairy:    ['greek_yogurt', 'cottage_cheese', 'cheese', 'whey_protein'],
+      eggs:     ['eggs'],
+      nuts:     ['almonds', 'peanut_butter'],
+      soy:      ['whey_protein'],
+      gluten:   ['bread', 'pasta', 'oats'],
+      'red meat': ['ground_beef'],
+      pork:     [],
+      shellfish: [],
+    }
+    const blockedIds = new Set<string>()
+    for (const [excl, foodIds] of Object.entries(exclusionMap)) {
+      if (excluded.has(excl)) foodIds.forEach(id => blockedIds.add(id))
+    }
+
+    return ids
+      .filter(id => !blockedIds.has(id))
+      .map(id => PRESET_FOOD_BY_ID.get(id))
+      .filter((f): f is PresetFood => f !== undefined)
+  })()
+
+  function applyPreset(preset: PresetFood) {
+    setCalories(String(preset.calories))
+    setProtein(String(preset.protein))
+    setCarbs(String(preset.carbs))
+    setFat(String(preset.fat))
+    setLabel(preset.name)
+    setCalError('')
+  }
 
   function handleSubmit() {
     const cal = Math.round(parseFloat(calories))
@@ -44,6 +91,24 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
     <>
       <div className={styles.scrollContent}>
         <p className={styles.hint}>Fast macro entry — nothing saved to your food library.</p>
+
+        {/* Preset chips */}
+        {presets.length > 0 && (
+          <div className={styles.presets}>
+            {presets.map(preset => (
+              <button
+                key={preset.id}
+                type="button"
+                className={styles.presetChip}
+                onClick={() => applyPreset(preset)}
+              >
+                {preset.name}
+                <span className={styles.presetCal}>{preset.calories} kcal</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         <Input
           label="Calories"
           value={calories}

@@ -26,6 +26,11 @@ export interface MacrosPer100g {
 
 // ─── User ─────────────────────────────────────────────────────────────────
 
+export interface FoodPreferences {
+  selectedFoods: string[]   // preset food IDs chosen during onboarding
+  excludedFoods: string[]   // exclusion labels e.g. 'Dairy'
+}
+
 export interface UserProfile {
   id: string
   name: string
@@ -34,6 +39,7 @@ export interface UserProfile {
   goalContext?: 'cut' | 'maintain' | 'bulk'
   units: 'metric' | 'imperial'
   createdAt: string
+  foodPreferences?: FoodPreferences  // optional — absent for existing users
 }
 
 // ─── Food ─────────────────────────────────────────────────────────────────

@@ -20,12 +20,21 @@ export function FoodInputSheet({ isOpen, onClose }: FoodInputSheetProps) {
   const activeMode = useStore((s) => s.foodInput.mode)
   const setMode = useStore((s) => s.setFoodInputMode)
   const addLogEntry = useStore((s) => s.addLogEntry)
+  const addToRecents = useStore((s) => s.addToRecents)
   const activeDate = useStore(selectActiveDate)
 
-  // Increment on each open to force panel remount → clears form state
+  // Increment on each open to force panel remount → clears form state.
+  // Also default to 'recent' tab if the user has recent history.
   const [panelKey, setPanelKey] = useState(0)
   useEffect(() => {
-    if (isOpen) setPanelKey((k) => k + 1)
+    if (!isOpen) return
+    setPanelKey((k) => k + 1)
+    // Read snapshot so we don't add recents to the dep array
+    const hasRecents = useStore.getState().recents.length > 0
+    if (hasRecents) {
+      setMode('recent')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
   const readyModes = getReadyModes()
@@ -41,6 +50,7 @@ export function FoodInputSheet({ isOpen, onClose }: FoodInputSheetProps) {
       loggedAt: new Date().toISOString(),
     }
     addLogEntry(entry)
+    addToRecents(food)
     onClose()
   }
 

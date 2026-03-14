@@ -73,61 +73,58 @@ export function EditEntrySheet({ entry, onClose }: EditEntrySheetProps) {
 
   return (
     <Sheet isOpen={entry !== null} onClose={onClose} label="Edit entry">
-      <div className={styles.sheetContent}>
+      <div className={styles.panel}>
+        <Input
+          label="Food name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          error={errors.name}
+          autoComplete="off"
+        />
+        <Input
+          label="Calories"
+          value={calories}
+          onChange={(e) => setCalories(e.target.value)}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          error={errors.calories}
+          rightElement={<span>kcal</span>}
+        />
+        <Input
+          label="Protein"
+          value={protein}
+          onChange={(e) => setProtein(e.target.value)}
+          inputMode="decimal"
+          placeholder="0"
+          rightElement={<span>g</span>}
+        />
+        <Input
+          label="Carbs"
+          value={carbs}
+          onChange={(e) => setCarbs(e.target.value)}
+          inputMode="decimal"
+          placeholder="0"
+          rightElement={<span>g</span>}
+        />
+        <Input
+          label="Fat"
+          value={fat}
+          onChange={(e) => setFat(e.target.value)}
+          inputMode="decimal"
+          placeholder="0"
+          rightElement={<span>g</span>}
+        />
+        <MealSlotPicker value={slot} onChange={setSlot} />
 
-        <div className={styles.panelArea}>
-          <div className={styles.panel}>
-            <Input
-              label="Food name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              error={errors.name}
-              autoComplete="off"
-            />
-            <Input
-              label="Calories"
-              value={calories}
-              onChange={(e) => setCalories(e.target.value)}
-              inputMode="numeric"
-              pattern="[0-9]*"
-              error={errors.calories}
-              rightElement={<span>kcal</span>}
-            />
-            <Input
-              label="Protein"
-              value={protein}
-              onChange={(e) => setProtein(e.target.value)}
-              inputMode="decimal"
-              placeholder="0"
-              rightElement={<span>g</span>}
-            />
-            <Input
-              label="Carbs"
-              value={carbs}
-              onChange={(e) => setCarbs(e.target.value)}
-              inputMode="decimal"
-              placeholder="0"
-              rightElement={<span>g</span>}
-            />
-            <Input
-              label="Fat"
-              value={fat}
-              onChange={(e) => setFat(e.target.value)}
-              inputMode="decimal"
-              placeholder="0"
-              rightElement={<span>g</span>}
-            />
-            <MealSlotPicker value={slot} onChange={setSlot} />
-          </div>
-        </div>
+        {/* Primary action */}
+        <Button variant="primary" size="lg" full onClick={handleSave}>
+          Save Changes
+        </Button>
 
-        <div className={styles.footer}>
-          <Button variant="primary" size="lg" full onClick={handleSave}>
-            Save Changes
-          </Button>
-
+        {/* Destructive action — danger variant so it's unambiguously visible */}
+        <div className={styles.deleteSection}>
           {!confirmDelete ? (
-            <Button variant="ghost" size="md" full onClick={() => setConfirmDelete(true)}>
+            <Button variant="danger" size="md" full onClick={() => setConfirmDelete(true)}>
               Delete Entry
             </Button>
           ) : (
@@ -138,7 +135,6 @@ export function EditEntrySheet({ entry, onClose }: EditEntrySheetProps) {
             </div>
           )}
         </div>
-
       </div>
     </Sheet>
   )

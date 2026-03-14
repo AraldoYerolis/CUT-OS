@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { IDBRepository } from '../services/storage/IDBRepository'
-import { DEFAULT_SETTINGS, DEFAULT_TARGETS } from '../domain/constants'
+import { DEFAULT_SETTINGS, DEFAULT_TARGETS, MAX_RECENTS } from '../domain/constants'
 import { toDateKey } from '../utils/date'
 import type {
   UserProfile,
@@ -59,6 +59,11 @@ interface AppActions {
   addLogEntry(entry: LoggedFood): void
   updateLogEntry(entry: LoggedFood): void
   deleteLogEntry(id: string, date: string): void
+
+  // Recents & Favorites
+  addToRecents(food: FoodItem): void
+  addToFavorites(food: FoodItem): void
+  removeFromFavorites(id: string): void
 
   // Food input sheet
   openFoodInput(mode?: FoodInputMode): void
@@ -137,6 +142,26 @@ export const useStore = create<AppStore>()(
           }
         }),
 
+      addToRecents: (food) =>
+        set((state) => {
+          const nameKey = food.name.trim().toLowerCase()
+          const filtered = state.recents.filter(
+            (f) => f.name.trim().toLowerCase() !== nameKey
+          )
+          return { recents: [food, ...filtered].slice(0, MAX_RECENTS) }
+        }),
+
+      addToFavorites: (food) =>
+        set((state) => {
+          if (state.favorites.some((f) => f.id === food.id)) return state
+          return { favorites: [...state.favorites, food] }
+        }),
+
+      removeFromFavorites: (id) =>
+        set((state) => ({
+          favorites: state.favorites.filter((f) => f.id !== id),
+        })),
+
       openFoodInput: (mode = 'manual') =>
         set({ foodInput: { isOpen: true, mode } }),
 
@@ -185,3 +210,5 @@ export const selectTargets = (s: AppStore) =>
   s.user?.targets ?? DEFAULT_TARGETS
 export const selectLogsForDate = (date: string) => (s: AppStore) =>
   s.logs[date] ?? []
+export const selectRecents = (s: AppStore) => s.recents
+export const selectFavorites = (s: AppStore) => s.favorites

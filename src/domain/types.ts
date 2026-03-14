@@ -38,7 +38,7 @@ export interface UserProfile {
 
 // ─── Food ─────────────────────────────────────────────────────────────────
 
-export type FoodSource = 'manual' | 'barcode' | 'search' | 'quickadd'
+export type FoodSource = 'manual' | 'barcode' | 'search' | 'quickadd' | 'labelscan'
 
 export interface FoodItem {
   id: string

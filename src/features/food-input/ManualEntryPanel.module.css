@@ -1,18 +1,19 @@
-.panel {
+/* Scrollable fields — direct child of .panelArea */
+.scrollContent {
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  /* breathing room above the sticky footer */
+  padding-bottom: var(--space-6);
 }
 
+/* Sticky CTA — direct sibling of .scrollContent inside .panelArea.
+   No negative margins → Safari sticky is reliable. */
 .footer {
   position: sticky;
   bottom: 0;
   background: var(--color-surface);
-  padding-top: var(--space-3);
-  padding-bottom: calc(var(--space-3) + var(--safe-bottom));
   border-top: 1px solid var(--color-border-subtle);
-  margin: 0 calc(var(--space-4) * -1);
-  padding-left: var(--space-4);
-  padding-right: var(--space-4);
+  padding: var(--space-3) var(--space-4) calc(var(--space-4) + var(--safe-bottom));
 }

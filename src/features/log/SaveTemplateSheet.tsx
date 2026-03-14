@@ -17,7 +17,6 @@ export function SaveTemplateSheet({ entries, isOpen, onClose }: SaveTemplateShee
   const [name, setName] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
-  // Reset state each time the sheet opens
   useEffect(() => {
     if (isOpen) {
       setName('')
@@ -58,7 +57,9 @@ export function SaveTemplateSheet({ entries, isOpen, onClose }: SaveTemplateShee
 
   return (
     <Sheet isOpen={isOpen} onClose={onClose} label="Save template">
-      <div className={styles.panel}>
+
+      {/* Scrollable form content — direct child of Sheet.body */}
+      <div className={styles.scrollContent}>
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="template-name">
@@ -102,19 +103,25 @@ export function SaveTemplateSheet({ entries, isOpen, onClose }: SaveTemplateShee
           </div>
         )}
 
-        <div className={styles.footer}>
-          <Button
-            variant="primary"
-            size="lg"
-            full
-            onClick={handleSave}
-            disabled={!canSave}
-          >
-            Save template
-          </Button>
-        </div>
-
       </div>
+
+      {/* Footer — direct sibling of scrollContent, also a direct child of Sheet.body.
+          position:sticky here works on Safari because:
+          - it is a direct child of the overflow-y:auto scroll container (.body)
+          - there are zero negative margins (WebKit bug avoided)
+          - .body has a concrete resolved height from flex:1 in .sheet */}
+      <div className={styles.footer}>
+        <Button
+          variant="primary"
+          size="lg"
+          full
+          onClick={handleSave}
+          disabled={!canSave}
+        >
+          Save template
+        </Button>
+      </div>
+
     </Sheet>
   )
 }

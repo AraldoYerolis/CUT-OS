@@ -8,6 +8,43 @@
   padding-bottom: var(--space-6);
 }
 
+/* ─── Calculated calorie row ─── */
+
+.calcRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  gap: var(--space-2);
+}
+
+.calcRowError {
+  border-color: var(--color-danger);
+}
+
+.calcLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.calcValue {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.calcError {
+  width: 100%;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
 /* Sticky CTA — direct sibling of .scrollContent inside .panelArea.
    No negative margins → Safari sticky is reliable. */
 .footer {

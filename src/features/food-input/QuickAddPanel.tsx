@@ -42,6 +42,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
 
   return (
     <div className={styles.panel}>
+      <p className={styles.hint}>Fast macro entry — nothing saved to your food library.</p>
       <Input
         label="Calories"
         value={calories}
@@ -86,7 +87,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
       <MealSlotPicker value={slot} onChange={setSlot} />
       <div className={styles.footer}>
         <Button variant="primary" size="lg" full onClick={handleSubmit}>
-          Add
+          Quick Log
         </Button>
       </div>
     </div>

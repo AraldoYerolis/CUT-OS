@@ -50,7 +50,9 @@ export function FoodInputSheet({ isOpen, onClose }: FoodInputSheetProps) {
       loggedAt: new Date().toISOString(),
     }
     addLogEntry(entry)
-    addToRecents(food)
+    if (food.source !== 'quickadd') {
+      addToRecents(food)
+    }
     onClose()
   }
 

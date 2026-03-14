@@ -247,15 +247,30 @@ export const selectIsHydrated = (s: AppStore) => s.isHydrated
 export const selectActiveDate = (s: AppStore) => s.activeDate
 export const selectFoodInput = (s: AppStore) => s.foodInput
 export const selectSettings = (s: AppStore) => s.settings
-export const selectTargets = (s: AppStore) => {
+// Memoise derived targets so the selector returns a stable object reference.
+// useSyncExternalStore (used by Zustand v5) calls getSnapshot() after every
+// render and uses Object.is to detect changes. Returning `{ ...t, calories }`
+// would always produce a new reference → infinite re-render loop → black screen.
+// We only recompute when the underlying user.targets object actually changes.
+let _cachedTargetsInput: MacroTargets | null = null
+let _cachedTargetsOutput: MacroTargets | null = null
+
+export const selectTargets = (s: AppStore): MacroTargets => {
   const t = s.user?.targets ?? DEFAULT_TARGETS
-  // Calories are always derived from macros so they stay consistent with
-  // what the user enters in Settings. Any stale stored calorie value is
-  // ignored — the Atwater formula is the single source of truth.
-  return {
-    ...t,
-    calories: Math.round(t.protein * 4 + t.carbs * 4 + t.fat * 9),
+  if (t !== _cachedTargetsInput || _cachedTargetsOutput === null) {
+    _cachedTargetsInput = t
+    _cachedTargetsOutput = {
+      ...t,
+      // Calories are always derived from macros (Atwater: P×4 + C×4 + F×9).
+      // Safe-coerce each value so old/missing stored data never produces NaN.
+      calories: Math.round(
+        (Number(t.protein) || 0) * 4 +
+        (Number(t.carbs)   || 0) * 4 +
+        (Number(t.fat)     || 0) * 9
+      ),
+    }
   }
+  return _cachedTargetsOutput
 }
 export const selectLogsForDate = (date: string) => (s: AppStore) =>
   s.logs[date] ?? []

@@ -247,8 +247,16 @@ export const selectIsHydrated = (s: AppStore) => s.isHydrated
 export const selectActiveDate = (s: AppStore) => s.activeDate
 export const selectFoodInput = (s: AppStore) => s.foodInput
 export const selectSettings = (s: AppStore) => s.settings
-export const selectTargets = (s: AppStore) =>
-  s.user?.targets ?? DEFAULT_TARGETS
+export const selectTargets = (s: AppStore) => {
+  const t = s.user?.targets ?? DEFAULT_TARGETS
+  // Calories are always derived from macros so they stay consistent with
+  // what the user enters in Settings. Any stale stored calorie value is
+  // ignored — the Atwater formula is the single source of truth.
+  return {
+    ...t,
+    calories: Math.round(t.protein * 4 + t.carbs * 4 + t.fat * 9),
+  }
+}
 export const selectLogsForDate = (date: string) => (s: AppStore) =>
   s.logs[date] ?? []
 export const selectRecents = (s: AppStore) => s.recents

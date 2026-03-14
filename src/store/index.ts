@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { IDBRepository } from '../services/storage/IDBRepository'
 import { DEFAULT_SETTINGS, DEFAULT_TARGETS, MAX_RECENTS } from '../domain/constants'
 import { toDateKey } from '../utils/date'
+import { computeMacros } from '../domain/calculations'
+import { generateId } from '../utils/id'
 import type {
   UserProfile,
   LoggedFood,
@@ -64,6 +66,11 @@ interface AppActions {
   addToRecents(food: FoodItem): void
   addToFavorites(food: FoodItem): void
   removeFromFavorites(id: string): void
+
+  // Templates
+  saveTemplate(template: MealTemplate): void
+  deleteTemplate(id: string): void
+  applyTemplate(templateId: string, date: string): void
 
   // Food input sheet
   openFoodInput(mode?: FoodInputMode): void
@@ -162,6 +169,40 @@ export const useStore = create<AppStore>()(
           favorites: state.favorites.filter((f) => f.id !== id),
         })),
 
+      saveTemplate: (template) =>
+        set((state) => ({
+          templates: [template, ...state.templates],
+        })),
+
+      deleteTemplate: (id) =>
+        set((state) => ({
+          templates: state.templates.filter((t) => t.id !== id),
+        })),
+
+      applyTemplate: (templateId, date) =>
+        set((state) => {
+          const template = state.templates.find((t) => t.id === templateId)
+          if (!template) return state
+          const now = new Date().toISOString()
+          const newEntries: LoggedFood[] = template.items.map((item) => ({
+            id: generateId(),
+            date,
+            foodItem: item.foodItem,
+            quantityG: item.quantityG,
+            macros: computeMacros(item.foodItem.macros, item.quantityG),
+            mealSlot: item.mealSlot,
+            loggedAt: now,
+            fromTemplate: templateId,
+          }))
+          const existing = state.logs[date] ?? []
+          return {
+            logs: { ...state.logs, [date]: [...existing, ...newEntries] },
+            templates: state.templates.map((t) =>
+              t.id === templateId ? { ...t, lastUsedAt: now } : t
+            ),
+          }
+        }),
+
       openFoodInput: (mode = 'manual') =>
         set({ foodInput: { isOpen: true, mode } }),
 
@@ -212,3 +253,4 @@ export const selectLogsForDate = (date: string) => (s: AppStore) =>
   s.logs[date] ?? []
 export const selectRecents = (s: AppStore) => s.recents
 export const selectFavorites = (s: AppStore) => s.favorites
+export const selectTemplates = (s: AppStore) => s.templates

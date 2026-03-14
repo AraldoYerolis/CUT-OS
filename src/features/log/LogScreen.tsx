@@ -4,6 +4,7 @@ import { Screen } from '../../components/layout/Screen'
 import { Header } from '../../components/layout/Header'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { EditEntrySheet } from './EditEntrySheet'
+import { SaveTemplateSheet } from './SaveTemplateSheet'
 import { sumMacros } from '../../domain/calculations'
 import { formatCalories } from '../../utils/format'
 import { MEAL_SLOTS, MEAL_SLOT_LABELS } from '../../domain/constants'
@@ -17,6 +18,7 @@ export function LogScreen() {
   const targets = useStore(selectTargets)
   const dailyLogs = useStore((s) => s.logs[activeDate] ?? NO_LOGS)
   const [selectedEntry, setSelectedEntry] = useState<LoggedFood | null>(null)
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false)
 
   const totals = useMemo(
     () => sumMacros(dailyLogs.map((l) => l.macros)),
@@ -35,9 +37,15 @@ export function LogScreen() {
   const filledSlots = MEAL_SLOTS.filter((s) => (grouped[s]?.length ?? 0) > 0)
   const isEmpty = dailyLogs.length === 0
 
+  const saveTemplateBtn = !isEmpty ? (
+    <button className={styles.saveTemplateBtn} onClick={() => setSaveTemplateOpen(true)} type="button">
+      Save template
+    </button>
+  ) : undefined
+
   return (
     <Screen>
-      <Header title="Log" />
+      <Header title="Log" right={saveTemplateBtn} />
 
       {isEmpty ? (
         <EmptyState
@@ -113,6 +121,12 @@ export function LogScreen() {
       <EditEntrySheet
         entry={selectedEntry}
         onClose={() => setSelectedEntry(null)}
+      />
+
+      <SaveTemplateSheet
+        entries={dailyLogs}
+        isOpen={saveTemplateOpen}
+        onClose={() => setSaveTemplateOpen(false)}
       />
     </Screen>
   )

@@ -79,10 +79,10 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
           rightElement={<span>g</span>}
         />
         <Input
-          label="Label (optional)"
+          label="Name (optional)"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          placeholder="e.g. Protein shake"
+          placeholder="e.g. Afternoon snack"
           autoComplete="off"
         />
         <MealSlotPicker value={slot} onChange={setSlot} />

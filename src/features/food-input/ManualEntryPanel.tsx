@@ -7,20 +7,28 @@ import { generateId } from '../../utils/id'
 import type { FoodItem, MealSlot } from '../../domain/types'
 import styles from './ManualEntryPanel.module.css'
 
+function calcCalories(protein: string, carbs: string, fat: string): number {
+  return Math.round(
+    (parseFloat(protein) || 0) * 4 +
+    (parseFloat(carbs) || 0) * 4 +
+    (parseFloat(fat) || 0) * 9
+  )
+}
+
 export function ManualEntryPanel({ onConfirm }: FoodInputContext) {
   const [name, setName] = useState('')
-  const [calories, setCalories] = useState('')
   const [protein, setProtein] = useState('')
   const [carbs, setCarbs] = useState('')
   const [fat, setFat] = useState('')
   const [slot, setSlot] = useState<MealSlot>('untagged')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const computedCalories = calcCalories(protein, carbs, fat)
+
   function handleSubmit() {
     const errs: Record<string, string> = {}
     if (!name.trim()) errs.name = 'Required'
-    const cal = Math.round(parseFloat(calories))
-    if (!calories || isNaN(cal) || cal <= 0) errs.calories = 'Enter a value > 0'
+    if (computedCalories <= 0) errs.macros = 'Enter at least one macro'
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
 
@@ -28,7 +36,7 @@ export function ManualEntryPanel({ onConfirm }: FoodInputContext) {
       id: generateId(),
       name: name.trim(),
       macros: {
-        calories: cal,
+        calories: computedCalories,
         protein: Math.max(0, parseFloat(protein) || 0),
         carbs: Math.max(0, parseFloat(carbs) || 0),
         fat: Math.max(0, parseFloat(fat) || 0),
@@ -40,8 +48,6 @@ export function ManualEntryPanel({ onConfirm }: FoodInputContext) {
     onConfirm(food, 100, slot)
   }
 
-  // Two sibling divs inside .panelArea (the overflow-y:auto scroll container).
-  // .footer has position:sticky; bottom:0 — no negative margins, so Safari sticky works.
   return (
     <>
       <div className={styles.scrollContent}>
@@ -52,15 +58,6 @@ export function ManualEntryPanel({ onConfirm }: FoodInputContext) {
           placeholder="e.g. Chicken breast"
           error={errors.name}
           autoComplete="off"
-        />
-        <Input
-          label="Calories"
-          value={calories}
-          onChange={(e) => setCalories(e.target.value)}
-          inputMode="numeric"
-          pattern="[0-9]*"
-          error={errors.calories}
-          rightElement={<span>kcal</span>}
         />
         <Input
           label="Protein"
@@ -86,6 +83,16 @@ export function ManualEntryPanel({ onConfirm }: FoodInputContext) {
           placeholder="0"
           rightElement={<span>g</span>}
         />
+
+        {/* Live calorie readout — derived from macros, not user input */}
+        <div className={[styles.calcRow, errors.macros ? styles.calcRowError : ''].filter(Boolean).join(' ')}>
+          <span className={styles.calcLabel}>Calories</span>
+          <span className={styles.calcValue}>
+            {computedCalories > 0 ? `${computedCalories} kcal` : '—'}
+          </span>
+          {errors.macros && <span className={styles.calcError}>{errors.macros}</span>}
+        </div>
+
         <MealSlotPicker value={slot} onChange={setSlot} />
       </div>
       <div className={styles.footer}>

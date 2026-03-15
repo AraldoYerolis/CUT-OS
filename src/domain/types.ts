@@ -72,6 +72,11 @@ export interface MealItem {
   protein: number
   carbs: number
   fat: number
+  // Optional — present when the item was added via search or My Foods.
+  // amount is the user-entered serving quantity; unit is the matching unit
+  // (e.g. 200 g, 1 serving). Absent for items saved before Phase 14.2.
+  amount?: number
+  unit?: string
 }
 
 export interface MyMeal {

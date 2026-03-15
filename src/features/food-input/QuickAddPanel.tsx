@@ -14,6 +14,12 @@ import { searchFoods, type SearchableFood } from '../../domain/searchFoods'
 import type { FoodItem, MealSlot } from '../../domain/types'
 import styles from './QuickAddPanel.module.css'
 
+// Round to 1 decimal, strip trailing .0 → "31" not "31.0"
+function roundMacro(v: number): string {
+  const r = Math.round(v * 10) / 10
+  return r % 1 === 0 ? String(Math.round(r)) : String(r)
+}
+
 export function QuickAddPanel({ onConfirm }: FoodInputContext) {
   const user = useStore(selectUser)
 
@@ -26,17 +32,31 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
   const [slot, setSlot]         = useState<MealSlot>('untagged')
   const [calError, setCalError] = useState('')
 
-  // ─── Search state (additive) ───────────────────────────────────────────
-  const [searchQuery, setSearchQuery]     = useState('')
-  const [selectedFood, setSelectedFood]   = useState<SearchableFood | null>(null)
+  // ─── Search state (Phase 12A) ──────────────────────────────────────────
+  const [searchQuery, setSearchQuery]   = useState('')
+  const [selectedFood, setSelectedFood] = useState<SearchableFood | null>(null)
 
-  // Derived: compute results only while typing (no selected food yet)
-  const showResults  = searchQuery.length >= 1 && selectedFood === null
+  // ─── Quantity state (Phase 12B — only active when selectedFood !== null) ─
+  const [quantity, setQuantity] = useState('')
+
+  // Derived
+  const showResults   = searchQuery.length >= 1 && selectedFood === null
   const searchResults = showResults ? searchFoods(searchQuery, 8) : []
+
+  // ─── Scaling helper ────────────────────────────────────────────────────
+  function scaleAndFill(food: SearchableFood, qty: string) {
+    const q = parseFloat(qty)
+    if (!qty.trim() || isNaN(q) || q <= 0) return
+    const factor = q / food.baseAmount
+    setCalories(String(Math.round(food.calories * factor)))
+    setProtein(roundMacro(food.protein * factor))
+    setCarbs(roundMacro(food.carbs * factor))
+    setFat(roundMacro(food.fat * factor))
+    setCalError('')
+  }
 
   // ─── Helpers ──────────────────────────────────────────────────────────
 
-  // Shared fill logic used by both search-select and preset chips
   function fillForm(cal: number, pro: number, car: number, f: number, name: string) {
     setCalories(String(cal))
     setProtein(String(pro))
@@ -47,15 +67,24 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
   }
 
   function applySearchFood(food: SearchableFood) {
-    const fullName = food.descriptor ? `${food.name} ${food.descriptor}` : food.name
-    fillForm(food.calories, food.protein, food.carbs, food.fat, fullName)
+    const fullName = [food.name, food.descriptor].filter(Boolean).join(' — ')
+    const defaultQty = String(food.baseAmount)
     setSelectedFood(food)
-    setSearchQuery('')  // collapse results list
+    setSearchQuery('')
+    setQuantity(defaultQty)
+    setLabel(fullName)
+    scaleAndFill(food, defaultQty)
+  }
+
+  function handleQuantityChange(val: string) {
+    setQuantity(val)
+    if (selectedFood) scaleAndFill(selectedFood, val)
   }
 
   function clearSearch() {
     setSelectedFood(null)
     setSearchQuery('')
+    setQuantity('')
     setCalories('')
     setProtein('')
     setCarbs('')
@@ -64,10 +93,11 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
     setCalError('')
   }
 
-  // Preset chips still use applyPreset (unchanged behavior)
+  // Preset chips: serving-size presets, bypass quantity mode
   function applyPreset(preset: PresetFood) {
     fillForm(preset.calories, preset.protein, preset.carbs, preset.fat, preset.name)
     setSelectedFood(null)
+    setQuantity('')
     setSearchQuery('')
   }
 
@@ -100,8 +130,17 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
       .filter((f): f is PresetFood => f !== undefined)
   })()
 
-  // ─── Submit (unchanged) ────────────────────────────────────────────────
+  // ─── Submit ────────────────────────────────────────────────────────────
   function handleSubmit() {
+    // If a food is selected, require a valid quantity
+    if (selectedFood !== null) {
+      const q = parseFloat(quantity)
+      if (!quantity.trim() || isNaN(q) || q <= 0) {
+        setCalError('Enter an amount')
+        return
+      }
+    }
+
     const cal = Math.round(parseFloat(calories))
     if (!calories || isNaN(cal) || cal <= 0) {
       setCalError('Enter a calorie amount')
@@ -125,7 +164,6 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
     onConfirm(food, 100, slot)
   }
 
-  // ─── Selected food display string ─────────────────────────────────────
   const selectedFoodLabel = selectedFood
     ? [selectedFood.name, selectedFood.descriptor].filter(Boolean).join(' — ')
     : null
@@ -135,7 +173,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
       <div className={styles.scrollContent}>
         <p className={styles.hint}>Fast macro entry — nothing saved to your food library.</p>
 
-        {/* ── Search field (additive) ── */}
+        {/* ── Search field ── */}
         <div className={styles.searchWrap}>
           <div className={styles.searchRow}>
             <input
@@ -164,12 +202,25 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
             )}
           </div>
 
-          {/* Selected food badge */}
+          {/* Selected food badge + quantity input (Phase 12B) */}
           {selectedFood !== null && (
-            <div className={styles.selectedBadge}>
-              <span className={styles.selectedBadgeName}>{selectedFoodLabel}</span>
-              <span className={styles.selectedBadgeCal}>{selectedFood.calories} kcal</span>
-            </div>
+            <>
+              <div className={styles.selectedBadge}>
+                <span className={styles.selectedBadgeName}>{selectedFoodLabel}</span>
+                <span className={styles.selectedBadgeCal}>
+                  per {selectedFood.baseAmount}&thinsp;{selectedFood.baseUnit}
+                </span>
+              </div>
+              <Input
+                label="Amount"
+                value={quantity}
+                onChange={e => handleQuantityChange(e.target.value)}
+                inputMode="decimal"
+                pattern="[0-9.]*"
+                error={calError && selectedFood ? calError : undefined}
+                rightElement={<span>{selectedFood.baseUnit}</span>}
+              />
+            </>
           )}
 
           {/* Live results */}
@@ -217,14 +268,14 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
           </div>
         )}
 
-        {/* Direct-entry fields (unchanged) */}
+        {/* Direct-entry fields (unchanged — auto-filled when food is selected) */}
         <Input
           label="Calories"
           value={calories}
           onChange={(e) => setCalories(e.target.value)}
           inputMode="numeric"
           pattern="[0-9]*"
-          error={calError}
+          error={selectedFood === null ? calError : undefined}
           rightElement={<span>kcal</span>}
         />
         <Input

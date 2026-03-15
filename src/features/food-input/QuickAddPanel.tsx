@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { useStore, selectUser } from '../../store'
+import {
+  useStore,
+  selectUser,
+  selectRecents,
+  selectFavorites,
+  selectMyFoods,
+} from '../../store'
 import type { FoodInputContext } from '../../services/foodInput/FoodInputService'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
@@ -8,11 +14,77 @@ import { generateId } from '../../utils/id'
 import {
   PRESET_FOOD_BY_ID,
   DEFAULT_QUICK_PRESET_IDS,
-  type PresetFood,
 } from '../../domain/foodPresets'
 import { searchFoods, type SearchableFood } from '../../domain/searchFoods'
-import type { FoodItem, MealSlot } from '../../domain/types'
+import type { FoodItem, MealSlot, SavedFood } from '../../domain/types'
 import styles from './QuickAddPanel.module.css'
+
+// ─── Personalized shortcut chips ─────────────────────────────────────────
+// Unified shape for all chip sources (recents, favorites, my foods, fallback).
+interface QuickChip {
+  id: string
+  name: string
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
+function buildShortcuts(
+  recents: FoodItem[],
+  favorites: FoodItem[],
+  myFoods: SavedFood[],
+  maxTotal = 6,
+): QuickChip[] {
+  const seen = new Set<string>()
+  const chips: QuickChip[] = []
+
+  function fromFoodItem(food: FoodItem): QuickChip {
+    const s = food.servingSizeG
+    return {
+      id:       food.id,
+      name:     food.name,
+      calories: Math.round(food.macros.calories * s / 100),
+      protein:  Math.round(food.macros.protein  * s / 100 * 10) / 10,
+      carbs:    Math.round(food.macros.carbs    * s / 100 * 10) / 10,
+      fat:      Math.round(food.macros.fat      * s / 100 * 10) / 10,
+    }
+  }
+
+  function tryAdd(chip: QuickChip) {
+    if (chips.length >= maxTotal) return
+    const key = chip.name.trim().toLowerCase()
+    if (seen.has(key)) return
+    seen.add(key)
+    chips.push(chip)
+  }
+
+  // Tier 1: 3 most recent foods
+  for (const f of recents.slice(0, 3)) tryAdd(fromFoodItem(f))
+
+  // Tier 2: first 2 favorites
+  for (const f of favorites.slice(0, 2)) tryAdd(fromFoodItem(f))
+
+  // Tier 3: most-used My Foods (sorted by lastUsedAt/savedAt)
+  const sortedMyFoods = [...myFoods].sort((a, b) =>
+    (b.lastUsedAt ?? b.savedAt).localeCompare(a.lastUsedAt ?? a.savedAt)
+  )
+  for (const f of sortedMyFoods.slice(0, 3)) {
+    tryAdd({ id: f.id, name: f.name, calories: f.calories, protein: f.protein, carbs: f.carbs, fat: f.fat })
+  }
+
+  // Tier 4: static fallback — only used when user has almost no data
+  if (chips.length < 2) {
+    for (const id of DEFAULT_QUICK_PRESET_IDS) {
+      if (chips.length >= maxTotal) break
+      const p = PRESET_FOOD_BY_ID.get(id)
+      if (!p) continue
+      tryAdd({ id: p.id, name: p.name, calories: p.calories, protein: p.protein, carbs: p.carbs, fat: p.fat })
+    }
+  }
+
+  return chips
+}
 
 // Round to 1 decimal, strip trailing .0 → "31" not "31.0"
 function roundMacro(v: number): string {
@@ -21,7 +93,10 @@ function roundMacro(v: number): string {
 }
 
 export function QuickAddPanel({ onConfirm }: FoodInputContext) {
-  const user = useStore(selectUser)
+  const user      = useStore(selectUser)
+  const recents   = useStore(selectRecents)
+  const favorites = useStore(selectFavorites)
+  const myFoods   = useStore(selectMyFoods)
 
   // ─── Direct-entry state (unchanged) ───────────────────────────────────
   const [calories, setCalories] = useState('')
@@ -93,21 +168,18 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
     setCalError('')
   }
 
-  // Preset chips: serving-size presets, bypass quantity mode
-  function applyPreset(preset: PresetFood) {
-    fillForm(preset.calories, preset.protein, preset.carbs, preset.fat, preset.name)
+  // Shortcut chips: personalized from recents → favorites → my foods → fallback
+  function applyPreset(chip: QuickChip) {
+    fillForm(chip.calories, chip.protein, chip.carbs, chip.fat, chip.name)
     setSelectedFood(null)
     setQuantity('')
     setSearchQuery('')
   }
 
-  // ─── Preset chips from user preferences (unchanged logic) ─────────────
-  const presets: PresetFood[] = (() => {
+  // Respect onboarding exclusions for the static fallback tier only.
+  // When the user has real behavioral data the fallback tier is never reached.
+  const excludedIds = (() => {
     const prefs = user?.foodPreferences
-    const ids = prefs && prefs.selectedFoods.length > 0
-      ? prefs.selectedFoods
-      : DEFAULT_QUICK_PRESET_IDS
-
     const excluded = new Set((prefs?.excludedFoods ?? []).map(e => e.toLowerCase()))
     const exclusionMap: Record<string, string[]> = {
       dairy:      ['greek_yogurt', 'cottage_cheese', 'cheese', 'whey_protein'],
@@ -116,19 +188,18 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
       soy:        ['whey_protein'],
       gluten:     ['bread', 'pasta', 'oats'],
       'red meat': ['ground_beef'],
-      pork:       [],
-      shellfish:  [],
     }
-    const blockedIds = new Set<string>()
+    const blocked = new Set<string>()
     for (const [excl, foodIds] of Object.entries(exclusionMap)) {
-      if (excluded.has(excl)) foodIds.forEach(id => blockedIds.add(id))
+      if (excluded.has(excl)) foodIds.forEach(id => blocked.add(id))
     }
-
-    return ids
-      .filter(id => !blockedIds.has(id))
-      .map(id => PRESET_FOOD_BY_ID.get(id))
-      .filter((f): f is PresetFood => f !== undefined)
+    return blocked
   })()
+
+  const filteredRecents   = recents.filter(f => !excludedIds.has(f.id))
+  const filteredFavorites = favorites.filter(f => !excludedIds.has(f.id))
+
+  const shortcuts = buildShortcuts(filteredRecents, filteredFavorites, myFoods)
 
   // ─── Submit ────────────────────────────────────────────────────────────
   function handleSubmit() {
@@ -251,18 +322,18 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
           )}
         </div>
 
-        {/* Preset chips (unchanged) */}
-        {presets.length > 0 && (
+        {/* Personalized shortcut chips */}
+        {shortcuts.length > 0 && (
           <div className={styles.presets}>
-            {presets.map(preset => (
+            {shortcuts.map(chip => (
               <button
-                key={preset.id}
+                key={chip.id}
                 type="button"
                 className={styles.presetChip}
-                onClick={() => applyPreset(preset)}
+                onClick={() => applyPreset(chip)}
               >
-                {preset.name}
-                <span className={styles.presetCal}>{preset.calories} kcal</span>
+                {chip.name}
+                <span className={styles.presetCal}>{chip.calories} kcal</span>
               </button>
             ))}
           </div>

@@ -80,6 +80,7 @@ interface AppActions {
   // My Meals (Phase 14)
   saveMyMeal(meal: MyMeal): void
   deleteMyMeal(id: string): void
+  updateMyMeal(meal: MyMeal): void
   logMyMeal(mealId: string, date: string, slot: MealSlot): void
 
   // Templates
@@ -235,6 +236,11 @@ export const useStore = create<AppStore>()(
       deleteMyMeal: (id) =>
         set((state) => ({
           myMeals: state.myMeals.filter((m) => m.id !== id),
+        })),
+
+      updateMyMeal: (meal) =>
+        set((state) => ({
+          myMeals: state.myMeals.map((m) => (m.id === meal.id ? meal : m)),
         })),
 
       logMyMeal: (mealId, date, slot) =>

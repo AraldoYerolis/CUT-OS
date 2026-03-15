@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useStore, selectMyMeals, selectMyFoods, selectActiveDate } from '../../store'
 import type { FoodInputContext } from '../../services/foodInput/FoodInputService'
 import { Input } from '../../components/ui/Input'
@@ -39,18 +39,21 @@ function scaledMacros(entry: PendingEntry, qty: number) {
 
 interface BuilderProps {
   myFoods: SavedFood[]
+  editMeal?: MyMeal          // when set → edit mode (pre-populated, saves in-place)
   onSave: (meal: MyMeal) => void
   onBack: () => void
 }
 
-function Builder({ myFoods, onSave, onBack }: BuilderProps) {
-  const [mealName, setMealName]           = useState('')
+function Builder({ myFoods, editMeal, onSave, onBack }: BuilderProps) {
+  const isEdit = editMeal !== undefined
+
+  const [mealName, setMealName]           = useState(editMeal?.name ?? '')
   const [nameError, setNameError]         = useState('')
   const [searchQuery, setSearchQuery]     = useState('')
   const [pending, setPending]             = useState<PendingEntry | null>(null)
   const [pendingQty, setPendingQty]       = useState('')
   const [pendingErr, setPendingErr]       = useState('')
-  const [draftItems, setDraftItems]       = useState<MealItem[]>([])
+  const [draftItems, setDraftItems]       = useState<MealItem[]>(editMeal?.items ?? [])
 
   const showResults  = searchQuery.length >= 1 && pending === null
   const searchResults: SearchableFood[] = showResults ? searchFoods(searchQuery, 8) : []
@@ -133,13 +136,23 @@ function Builder({ myFoods, onSave, onBack }: BuilderProps) {
     }
     setNameError('')
     const now = new Date().toISOString()
-    const meal: MyMeal = {
-      id:        generateId(),
-      name:      trimmed,
-      items:     draftItems,
-      createdAt: now,
-      useCount:  0,
-    }
+    const meal: MyMeal = isEdit
+      ? {
+          // Preserve stable fields; items/name updated in-place
+          id:          editMeal!.id,
+          createdAt:   editMeal!.createdAt,
+          useCount:    editMeal!.useCount,
+          lastUsedAt:  editMeal!.lastUsedAt,
+          name:        trimmed,
+          items:       draftItems,
+        }
+      : {
+          id:        generateId(),
+          name:      trimmed,
+          items:     draftItems,
+          createdAt: now,
+          useCount:  0,
+        }
     onSave(meal)
   }
 
@@ -156,7 +169,7 @@ function Builder({ myFoods, onSave, onBack }: BuilderProps) {
       <div className={styles.scrollContent}>
         {/* Back link */}
         <button type="button" className={styles.backBtn} onClick={onBack}>
-          ← My Meals
+          ← {isEdit ? 'Cancel edit' : 'My Meals'}
         </button>
 
         <Input
@@ -310,7 +323,7 @@ function Builder({ myFoods, onSave, onBack }: BuilderProps) {
 
       <div className={styles.footer}>
         <Button variant="primary" size="lg" full onClick={handleSave}>
-          Save Meal
+          {isEdit ? 'Update Meal' : 'Save Meal'}
         </Button>
         <Button variant="ghost" size="lg" full onClick={onBack}>
           Cancel
@@ -323,32 +336,57 @@ function Builder({ myFoods, onSave, onBack }: BuilderProps) {
 // ─── List view ─────────────────────────────────────────────────────────────
 
 export function MyMealsPanel({ onCancel }: FoodInputContext) {
-  const myMeals      = useStore(selectMyMeals)
-  const myFoods      = useStore(selectMyFoods)
-  const saveMyMeal   = useStore(s => s.saveMyMeal)
-  const deleteMyMeal = useStore(s => s.deleteMyMeal)
-  const logMyMeal    = useStore(s => s.logMyMeal)
-  const activeDate   = useStore(selectActiveDate)
+  const myMeals       = useStore(selectMyMeals)
+  const myFoods       = useStore(selectMyFoods)
+  const saveMyMeal    = useStore(s => s.saveMyMeal)
+  const deleteMyMeal  = useStore(s => s.deleteMyMeal)
+  const updateMyMeal  = useStore(s => s.updateMyMeal)
+  const logMyMeal     = useStore(s => s.logMyMeal)
+  const activeDate    = useStore(selectActiveDate)
 
-  const [view, setView]   = useState<'list' | 'builder'>('list')
-  const [slot, setSlot]   = useState<MealSlot>('untagged')
-  const [query, setQuery] = useState('')
+  const [view, setView]             = useState<'list' | 'builder'>('list')
+  const [editingMeal, setEditingMeal] = useState<MyMeal | null>(null)
+  const [slot, setSlot]             = useState<MealSlot>('untagged')
+  const [query, setQuery]           = useState('')
 
-  function handleSave(meal: MyMeal) {
+  const handleSaveNew = useCallback((meal: MyMeal) => {
     saveMyMeal(meal)
     setView('list')
-  }
+  }, [saveMyMeal])
+
+  const handleSaveEdit = useCallback((meal: MyMeal) => {
+    updateMyMeal(meal)
+    setEditingMeal(null)
+    setView('list')
+  }, [updateMyMeal])
 
   function handleLog(id: string) {
     logMyMeal(id, activeDate, slot)
     onCancel()
   }
 
+  function openEdit(meal: MyMeal) {
+    setEditingMeal(meal)
+    setView('builder')
+  }
+
+  function openNewBuilder() {
+    setEditingMeal(null)
+    setView('builder')
+  }
+
   if (view === 'builder') {
-    return (
+    return editingMeal ? (
       <Builder
         myFoods={myFoods}
-        onSave={handleSave}
+        editMeal={editingMeal}
+        onSave={handleSaveEdit}
+        onBack={() => { setEditingMeal(null); setView('list') }}
+      />
+    ) : (
+      <Builder
+        myFoods={myFoods}
+        onSave={handleSaveNew}
         onBack={() => setView('list')}
       />
     )
@@ -375,7 +413,7 @@ export function MyMealsPanel({ onCancel }: FoodInputContext) {
           </p>
         </div>
         <div className={styles.footer}>
-          <Button variant="primary" size="lg" full onClick={() => setView('builder')}>
+          <Button variant="primary" size="lg" full onClick={openNewBuilder}>
             + Build New Meal
           </Button>
         </div>
@@ -392,7 +430,7 @@ export function MyMealsPanel({ onCancel }: FoodInputContext) {
           <button
             type="button"
             className={styles.newMealBtn}
-            onClick={() => setView('builder')}
+            onClick={openNewBuilder}
           >
             + New
           </button>
@@ -435,6 +473,14 @@ export function MyMealsPanel({ onCancel }: FoodInputContext) {
                     <span className={styles.mealMeta}>
                       {meal.items.length} item{meal.items.length !== 1 ? 's' : ''} · {totalKcal} kcal
                     </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.editBtn}
+                    onClick={() => openEdit(meal)}
+                    aria-label={`Edit ${meal.name}`}
+                  >
+                    Edit
                   </button>
                   <button
                     type="button"

@@ -13,6 +13,7 @@ import type {
   AppSettings,
   FoodInputMode,
   MacroTargets,
+  SavedFood,
 } from '../domain/types'
 
 // ─── State shape ──────────────────────────────────────────────────────────
@@ -38,6 +39,7 @@ export interface AppState {
   favorites: FoodItem[]
   recents: FoodItem[]
   templates: MealTemplate[]
+  myFoods: SavedFood[]          // Phase 13 — saved reusable foods
 
   // Settings
   settings: AppSettings
@@ -66,6 +68,10 @@ interface AppActions {
   addToRecents(food: FoodItem): void
   addToFavorites(food: FoodItem): void
   removeFromFavorites(id: string): void
+
+  // My Foods (Phase 13)
+  saveToMyFoods(food: FoodItem): void
+  removeFromMyFoods(id: string): void
 
   // Templates
   saveTemplate(template: MealTemplate): void
@@ -107,6 +113,7 @@ export const useStore = create<AppStore>()(
       favorites: [],
       recents: [],
       templates: [],
+      myFoods: [],
       settings: { ...DEFAULT_SETTINGS },
       foodInput: { ...initialFoodInput },
 
@@ -169,6 +176,46 @@ export const useStore = create<AppStore>()(
           favorites: state.favorites.filter((f) => f.id !== id),
         })),
 
+      // Phase 13 — My Foods
+      saveToMyFoods: (food) =>
+        set((state) => {
+          const nameKey = food.name.trim().toLowerCase()
+          const now = new Date().toISOString()
+          // If a food with the same name already exists, bump useCount only
+          const existing = state.myFoods.find(
+            (f) => f.name.trim().toLowerCase() === nameKey
+          )
+          if (existing) {
+            return {
+              myFoods: state.myFoods.map((f) =>
+                f.id === existing.id
+                  ? { ...f, useCount: f.useCount + 1, lastUsedAt: now }
+                  : f
+              ),
+            }
+          }
+          const saved: SavedFood = {
+            id: food.id,
+            name: food.name,
+            brand: food.brand,
+            barcode: food.barcode,
+            calories: food.macros.calories,
+            protein: food.macros.protein,
+            carbs: food.macros.carbs,
+            fat: food.macros.fat,
+            source: food.source,
+            savedAt: now,
+            useCount: 1,
+            lastUsedAt: now,
+          }
+          return { myFoods: [saved, ...state.myFoods] }
+        }),
+
+      removeFromMyFoods: (id) =>
+        set((state) => ({
+          myFoods: state.myFoods.filter((f) => f.id !== id),
+        })),
+
       saveTemplate: (template) =>
         set((state) => ({
           templates: [template, ...state.templates],
@@ -224,6 +271,7 @@ export const useStore = create<AppStore>()(
         favorites: state.favorites,
         recents: state.recents,
         templates: state.templates,
+        myFoods: state.myFoods,
         settings: state.settings,
       }),
       onRehydrateStorage: () => (state) => {
@@ -277,3 +325,4 @@ export const selectLogsForDate = (date: string) => (s: AppStore) =>
 export const selectRecents = (s: AppStore) => s.recents
 export const selectFavorites = (s: AppStore) => s.favorites
 export const selectTemplates = (s: AppStore) => s.templates
+export const selectMyFoods = (s: AppStore) => s.myFoods

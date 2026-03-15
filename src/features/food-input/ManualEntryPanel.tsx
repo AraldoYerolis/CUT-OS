@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useStore } from '../../store'
 import type { FoodInputContext } from '../../services/foodInput/FoodInputService'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
@@ -16,23 +17,25 @@ function calcCalories(protein: string, carbs: string, fat: string): number {
 }
 
 export function ManualEntryPanel({ onConfirm }: FoodInputContext) {
+  const saveToMyFoods = useStore((s) => s.saveToMyFoods)
+
   const [name, setName] = useState('')
   const [protein, setProtein] = useState('')
   const [carbs, setCarbs] = useState('')
   const [fat, setFat] = useState('')
   const [slot, setSlot] = useState<MealSlot>('untagged')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [savedMsg, setSavedMsg] = useState(false)
 
   const computedCalories = calcCalories(protein, carbs, fat)
 
-  function handleSubmit() {
+  function buildFood(): FoodItem | null {
     const errs: Record<string, string> = {}
     if (!name.trim()) errs.name = 'Required'
     if (computedCalories <= 0) errs.macros = 'Enter at least one macro'
     setErrors(errs)
-    if (Object.keys(errs).length > 0) return
-
-    const food: FoodItem = {
+    if (Object.keys(errs).length > 0) return null
+    return {
       id: generateId(),
       name: name.trim(),
       macros: {
@@ -45,7 +48,20 @@ export function ManualEntryPanel({ onConfirm }: FoodInputContext) {
       source: 'manual',
       createdAt: new Date().toISOString(),
     }
+  }
+
+  function handleSubmit() {
+    const food = buildFood()
+    if (!food) return
     onConfirm(food, 100, slot)
+  }
+
+  function handleSaveToMyFoods() {
+    const food = buildFood()
+    if (!food) return
+    saveToMyFoods(food)
+    setSavedMsg(true)
+    setTimeout(() => setSavedMsg(false), 2000)
   }
 
   return (
@@ -98,6 +114,9 @@ export function ManualEntryPanel({ onConfirm }: FoodInputContext) {
       <div className={styles.footer}>
         <Button variant="primary" size="lg" full onClick={handleSubmit}>
           Add Food
+        </Button>
+        <Button variant="ghost" size="lg" full onClick={handleSaveToMyFoods}>
+          {savedMsg ? '✓ Saved to My Foods' : 'Save to My Foods'}
         </Button>
       </div>
     </>

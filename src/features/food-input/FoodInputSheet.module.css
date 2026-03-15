@@ -17,6 +17,9 @@
   flex-shrink: 0;
   padding: 0 var(--space-2);
   gap: var(--space-1);
+  /* Lock to horizontal axis — prevents diagonal/vertical drag slop on iOS */
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
 }
 
 .tabBar::-webkit-scrollbar {
@@ -49,6 +52,8 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  /* Lock to vertical axis — prevents horizontal bleed into tab bar or browser swipe-back */
+  touch-action: pan-y;
 }
 
 .placeholderPanel {

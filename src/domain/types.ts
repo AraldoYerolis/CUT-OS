@@ -42,6 +42,25 @@ export interface UserProfile {
   foodPreferences?: FoodPreferences  // optional — absent for existing users
 }
 
+// ─── My Foods (Phase 13) ───────────────────────────────────────────────────
+// Saved reusable foods for fast repeat logging.
+// Macros are serving-level totals (same convention as Quick Add / Manual Add).
+
+export interface SavedFood {
+  id: string
+  name: string
+  brand?: string
+  barcode?: string
+  calories: number   // serving total
+  protein: number
+  carbs: number
+  fat: number
+  source: FoodSource
+  savedAt: string
+  useCount: number
+  lastUsedAt?: string
+}
+
 // ─── Food ─────────────────────────────────────────────────────────────────
 
 export type FoodSource = 'manual' | 'barcode' | 'search' | 'quickadd' | 'labelscan'
@@ -103,6 +122,7 @@ export interface AppSettings {
 export type FoodInputMode =
   | 'recent'
   | 'favorites'
+  | 'myFoods'
   | 'manual'
   | 'quickAdd'
   | 'mealTemplate'

@@ -1,134 +1,186 @@
 // ─── Searchable food catalog ──────────────────────────────────────────────
-// Serving-level macros for Quick Add pre-fill.
-// Extended beyond foodPresets.ts to support full variants and discovery.
-// Phase 12B can extend this model (add baseWeightG etc.) without breaking changes.
+// Phase 12B: extended with baseAmount/baseUnit for quantity-based scaling.
+// All macros are per baseAmount. Most foods use baseAmount=100, baseUnit='g'.
+// Exceptions: eggs (per egg), egg whites (per white).
+// Values are USDA-reference generic approximations for common fitness foods.
+// Brand-sensitive items (protein bars, flavored yogurts, branded wraps, etc.)
+// are intentionally excluded — use barcode scan or manual entry for those.
 
 export interface SearchableFood {
   id: string
   name: string
-  descriptor?: string  // variant clarity: "90/10", "Nonfat", "Cooked"
-  calories: number
+  descriptor?: string   // variant clarity: "Cooked", "90/10", "Nonfat", "Dry"
+  baseAmount: number    // reference serving size (e.g. 100)
+  baseUnit: string      // 'g', 'ml', 'egg', 'white'
+  calories: number      // per baseAmount
   protein: number
   carbs: number
   fat: number
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────
+const g = (
+  id: string, name: string, descriptor: string | undefined,
+  cal: number, p: number, c: number, f: number,
+  baseAmount = 100,
+  baseUnit = 'g',
+): SearchableFood => ({ id, name, descriptor, baseAmount, baseUnit, calories: cal, protein: p, carbs: c, fat: f })
+
 export const SEARCHABLE_FOODS: SearchableFood[] = [
+
   // ─── Chicken ────────────────────────────────────────────────────────────
-  { id: 's_chicken_breast',      name: 'Chicken Breast',  descriptor: 'Cooked',       calories: 248, protein: 46, carbs: 0,  fat: 5  },
-  { id: 's_chicken_thigh',       name: 'Chicken Thigh',   descriptor: 'Cooked',       calories: 280, protein: 28, carbs: 0,  fat: 18 },
-  { id: 's_chicken_tender',      name: 'Chicken Tenders', descriptor: 'Cooked',       calories: 200, protein: 34, carbs: 2,  fat: 6  },
-  { id: 's_rotisserie_chicken',  name: 'Rotisserie Chicken', descriptor: 'Breast',    calories: 215, protein: 38, carbs: 0,  fat: 6  },
-  { id: 's_ground_chicken',      name: 'Ground Chicken',  descriptor: 'Cooked',       calories: 218, protein: 27, carbs: 0,  fat: 12 },
+  g('s_chicken_breast',     'Chicken Breast',     'Cooked',      165, 31,   0,  3.6),
+  g('s_chicken_tenderloin', 'Chicken Tenderloin', 'Cooked',      161, 30,   0,  3.4),
+  g('s_chicken_thigh',      'Chicken Thigh',      'Skinless, Cooked', 188, 25, 0, 10),
+  g('s_ground_chicken',     'Ground Chicken',     'Cooked',      218, 27,   0, 12),
+
+  // ─── Turkey ─────────────────────────────────────────────────────────────
+  g('s_turkey_breast',      'Turkey Breast',      'Cooked',      135, 30,   0,  1),
+  g('s_ground_turkey_991',  'Ground Turkey',      '99/1',        120, 27,   0,  1),
+  g('s_ground_turkey_973',  'Ground Turkey',      '97/3',        128, 26,   0,  3),
+  g('s_ground_turkey_937',  'Ground Turkey',      '93/7',        170, 24,   0,  8),
 
   // ─── Ground Beef ────────────────────────────────────────────────────────
-  { id: 's_ground_beef_8020',    name: 'Ground Beef',     descriptor: '80/20',        calories: 280, protein: 24, carbs: 0,  fat: 20 },
-  { id: 's_ground_beef_8515',    name: 'Ground Beef',     descriptor: '85/15',        calories: 240, protein: 25, carbs: 0,  fat: 15 },
-  { id: 's_ground_beef_9010',    name: 'Ground Beef',     descriptor: '90/10',        calories: 196, protein: 26, carbs: 0,  fat: 10 },
-  { id: 's_ground_beef_9604',    name: 'Ground Beef',     descriptor: '96/4',         calories: 155, protein: 27, carbs: 0,  fat: 5  },
+  g('s_ground_beef_9604',   'Ground Beef',        '96/4',        155, 27,   0,  5),
+  g('s_ground_beef_937',    'Ground Beef',        '93/7',        172, 25,   0,  8),
+  g('s_ground_beef_9010',   'Ground Beef',        '90/10',       196, 26,   0, 10),
+  g('s_ground_beef_8515',   'Ground Beef',        '85/15',       215, 21,   0, 15),
+  g('s_ground_beef_8020',   'Ground Beef',        '80/20',       254, 17,   0, 20),
 
-  // ─── Ground Turkey ──────────────────────────────────────────────────────
-  { id: 's_ground_turkey_937',   name: 'Ground Turkey',   descriptor: '93/7',         calories: 170, protein: 24, carbs: 0,  fat: 8  },
-  { id: 's_ground_turkey_991',   name: 'Ground Turkey',   descriptor: '99/1',         calories: 120, protein: 26, carbs: 0,  fat: 1  },
-
-  // ─── Other Beef / Red Meat ──────────────────────────────────────────────
-  { id: 's_sirloin_steak',       name: 'Sirloin Steak',   descriptor: 'Cooked',       calories: 207, protein: 32, carbs: 0,  fat: 8  },
-  { id: 's_ribeye_steak',        name: 'Ribeye Steak',    descriptor: 'Cooked',       calories: 310, protein: 29, carbs: 0,  fat: 21 },
-  { id: 's_beef_jerky',          name: 'Beef Jerky',                                  calories: 80,  protein: 10, carbs: 3,  fat: 2  },
+  // ─── Steak / Red Meat ────────────────────────────────────────────────────
+  g('s_top_sirloin',        'Top Sirloin',        'Cooked',      207, 32,   0,  8),
+  g('s_sirloin_tip',        'Sirloin Tip',        'Cooked',      186, 28,   0,  7),
+  g('s_flank_steak',        'Flank Steak',        'Cooked',      192, 28,   0,  9),
+  g('s_round_steak',        'Round Steak',        'Cooked',      168, 28,   0,  5),
+  g('s_bison',              'Bison',              'Ground, Cooked', 146, 28, 0,  3),
 
   // ─── Pork ───────────────────────────────────────────────────────────────
-  { id: 's_pork_tenderloin',     name: 'Pork Tenderloin', descriptor: 'Cooked',       calories: 186, protein: 32, carbs: 0,  fat: 6  },
-  { id: 's_bacon',               name: 'Bacon',           descriptor: '3 strips',     calories: 130, protein: 9,  carbs: 0,  fat: 10 },
+  g('s_pork_tenderloin',    'Pork Tenderloin',    'Cooked',      143, 25,   0,  3),
 
-  // ─── Fish & Seafood ─────────────────────────────────────────────────────
-  { id: 's_salmon',              name: 'Salmon',          descriptor: 'Atlantic',     calories: 208, protein: 25, carbs: 0,  fat: 13 },
-  { id: 's_tuna_water',          name: 'Tuna',            descriptor: 'Canned in water', calories: 128, protein: 30, carbs: 0, fat: 1  },
-  { id: 's_tuna_oil',            name: 'Tuna',            descriptor: 'Canned in oil', calories: 168, protein: 25, carbs: 0, fat: 7  },
-  { id: 's_tilapia',             name: 'Tilapia',         descriptor: 'Cooked',       calories: 145, protein: 29, carbs: 0,  fat: 3  },
-  { id: 's_shrimp',              name: 'Shrimp',          descriptor: 'Cooked',       calories: 84,  protein: 18, carbs: 0,  fat: 1  },
-  { id: 's_cod',                 name: 'Cod',             descriptor: 'Cooked',       calories: 105, protein: 23, carbs: 0,  fat: 1  },
+  // ─── Fish ───────────────────────────────────────────────────────────────
+  g('s_tuna_water',         'Tuna',               'Canned in water', 116, 26, 0, 1),
+  g('s_tuna_oil',           'Tuna',               'Canned in oil',   198, 23, 0, 11),
+  g('s_salmon',             'Salmon',             'Atlantic, Cooked', 208, 20, 0, 13),
+  g('s_tilapia',            'Tilapia',            'Cooked',      128, 26,   0,  3),
+  g('s_cod',                'Cod',                'Cooked',       82, 18,   0,  1),
+  g('s_haddock',            'Haddock',            'Cooked',       87, 19,   0,  1),
+  g('s_shrimp',             'Shrimp',             'Cooked',       85, 18,   1,  1),
+  g('s_scallops',           'Scallops',           'Cooked',      111, 20,   6,  1),
 
-  // ─── Eggs / Dairy Protein ────────────────────────────────────────────────
-  { id: 's_whole_eggs',          name: 'Eggs',            descriptor: 'Whole, 2',     calories: 143, protein: 13, carbs: 1,  fat: 10 },
-  { id: 's_egg_whites',          name: 'Egg Whites',      descriptor: '3 large',      calories: 52,  protein: 11, carbs: 1,  fat: 0  },
-  { id: 's_greek_yogurt_nonfat', name: 'Greek Yogurt',    descriptor: 'Nonfat',       calories: 89,  protein: 15, carbs: 5,  fat: 0  },
-  { id: 's_greek_yogurt_2',      name: 'Greek Yogurt',    descriptor: '2%',           calories: 110, protein: 15, carbs: 8,  fat: 3  },
-  { id: 's_cottage_cheese_2',    name: 'Cottage Cheese',  descriptor: '2%',           calories: 90,  protein: 12, carbs: 4,  fat: 2  },
-  { id: 's_cottage_cheese_4',    name: 'Cottage Cheese',  descriptor: '4%',           calories: 110, protein: 12, carbs: 4,  fat: 5  },
-  { id: 's_milk_whole',          name: 'Milk',            descriptor: 'Whole',        calories: 149, protein: 8,  carbs: 12, fat: 8  },
-  { id: 's_milk_skim',           name: 'Milk',            descriptor: 'Skim',         calories: 83,  protein: 8,  carbs: 12, fat: 0  },
-  { id: 's_string_cheese',       name: 'String Cheese',   descriptor: '1 stick',      calories: 80,  protein: 7,  carbs: 1,  fat: 5  },
-  { id: 's_cheddar_cheese',      name: 'Cheddar Cheese',  descriptor: '1 oz',         calories: 113, protein: 7,  carbs: 0,  fat: 9  },
-  { id: 's_mozzarella',          name: 'Mozzarella',      descriptor: '1 oz',         calories: 85,  protein: 6,  carbs: 1,  fat: 6  },
+  // ─── Eggs ───────────────────────────────────────────────────────────────
+  { id: 's_egg_whole',   name: 'Egg',          descriptor: 'Whole, large', baseAmount: 1, baseUnit: 'egg',   calories: 72,  protein: 6,   carbs: 0.4, fat: 5  },
+  { id: 's_egg_white',   name: 'Egg White',    descriptor: 'Large',        baseAmount: 1, baseUnit: 'white', calories: 17,  protein: 3.6, carbs: 0.2, fat: 0  },
+  g('s_liquid_egg_whites', 'Liquid Egg Whites', undefined,      52, 11,   0.7, 0),
 
-  // ─── Protein Powders ────────────────────────────────────────────────────
-  { id: 's_whey_protein',        name: 'Whey Protein',    descriptor: '1 scoop',      calories: 130, protein: 25, carbs: 5,  fat: 2  },
-  { id: 's_casein_protein',      name: 'Casein Protein',  descriptor: '1 scoop',      calories: 120, protein: 24, carbs: 4,  fat: 1  },
-  { id: 's_plant_protein',       name: 'Plant Protein',   descriptor: '1 scoop',      calories: 120, protein: 22, carbs: 6,  fat: 2  },
+  // ─── Dairy — generic plain variants only ────────────────────────────────
+  g('s_greek_yogurt_nonfat', 'Greek Yogurt',     'Nonfat, plain',  59, 10,  3.6, 0.4),
+  g('s_greek_yogurt_2',      'Greek Yogurt',     '2%, plain',      73,  9.9, 3.8, 2),
+  g('s_greek_yogurt_whole',  'Greek Yogurt',     'Whole milk, plain', 97, 9, 3.7, 5),
+  g('s_cottage_cheese_1',    'Cottage Cheese',   '1%',             72, 12,   3,  1),
+  g('s_cottage_cheese_2',    'Cottage Cheese',   '2%',             90, 12,   4,  3),
+  g('s_cottage_cheese_4',    'Cottage Cheese',   '4%',            110, 11,  3.4, 5),
+  g('s_milk_skim',           'Milk',             'Skim',           34,  3.4, 5,  0.1, 100, 'ml'),
+  g('s_milk_1',              'Milk',             '1%',             41,  3.4, 5,  1,   100, 'ml'),
+  g('s_milk_2',              'Milk',             '2%',             50,  3.3, 4.8, 2,  100, 'ml'),
+  g('s_milk_whole',          'Milk',             'Whole',          61,  3.2, 4.8, 3.3, 100, 'ml'),
 
-  // ─── Plant Protein ──────────────────────────────────────────────────────
-  { id: 's_tofu',                name: 'Tofu',            descriptor: 'Firm, 4 oz',   calories: 90,  protein: 10, carbs: 2,  fat: 5  },
-  { id: 's_tempeh',              name: 'Tempeh',          descriptor: '3 oz',         calories: 162, protein: 15, carbs: 8,  fat: 9  },
-  { id: 's_edamame',             name: 'Edamame',         descriptor: '1 cup',        calories: 189, protein: 17, carbs: 15, fat: 8  },
-  { id: 's_turkey_breast',       name: 'Turkey Breast',   descriptor: 'Sliced, 3 oz', calories: 90,  protein: 18, carbs: 1,  fat: 1  },
+  // ─── Rice (cooked) ──────────────────────────────────────────────────────
+  g('s_white_rice_cooked',   'White Rice',       'Cooked',        130,  2.7, 28, 0.3),
+  g('s_jasmine_rice_cooked', 'Jasmine Rice',     'Cooked',        130,  2.7, 28, 0.3),
+  g('s_basmati_rice_cooked', 'Basmati Rice',     'Cooked',        130,  2.7, 27, 0.4),
+  g('s_brown_rice_cooked',   'Brown Rice',       'Cooked',        123,  2.7, 26, 0.9),
 
-  // ─── Rice & Grains ──────────────────────────────────────────────────────
-  { id: 's_white_rice',          name: 'White Rice',      descriptor: 'Cooked, 1 cup', calories: 205, protein: 4,  carbs: 45, fat: 0  },
-  { id: 's_brown_rice',          name: 'Brown Rice',      descriptor: 'Cooked, 1 cup', calories: 215, protein: 5,  carbs: 45, fat: 2  },
-  { id: 's_jasmine_rice',        name: 'Jasmine Rice',    descriptor: 'Cooked, 1 cup', calories: 205, protein: 4,  carbs: 45, fat: 0  },
-  { id: 's_basmati_rice',        name: 'Basmati Rice',    descriptor: 'Cooked, 1 cup', calories: 200, protein: 4,  carbs: 43, fat: 0  },
-  { id: 's_oats',                name: 'Oats',            descriptor: 'Dry, 1/2 cup', calories: 195, protein: 7,  carbs: 34, fat: 3  },
-  { id: 's_quinoa',              name: 'Quinoa',          descriptor: 'Cooked, 1 cup', calories: 222, protein: 8,  carbs: 39, fat: 4  },
+  // ─── Rice (dry) ─────────────────────────────────────────────────────────
+  g('s_white_rice_dry',      'White Rice',       'Dry',           365,  7,   80, 0.6),
+  g('s_jasmine_rice_dry',    'Jasmine Rice',     'Dry',           365,  7,   80, 0.5),
+  g('s_basmati_rice_dry',    'Basmati Rice',     'Dry',           352,  8,   77, 0.7),
 
-  // ─── Bread / Pasta ──────────────────────────────────────────────────────
-  { id: 's_pasta_cooked',        name: 'Pasta',           descriptor: 'Cooked, 1 cup', calories: 180, protein: 7,  carbs: 37, fat: 1  },
-  { id: 's_whole_wheat_pasta',   name: 'Whole Wheat Pasta', descriptor: 'Cooked',     calories: 174, protein: 7,  carbs: 37, fat: 1  },
-  { id: 's_white_bread',         name: 'White Bread',     descriptor: '2 slices',     calories: 160, protein: 5,  carbs: 30, fat: 2  },
-  { id: 's_whole_wheat_bread',   name: 'Whole Wheat Bread', descriptor: '2 slices',   calories: 138, protein: 7,  carbs: 24, fat: 2  },
-  { id: 's_bagel',               name: 'Bagel',           descriptor: 'Plain',        calories: 270, protein: 11, carbs: 53, fat: 2  },
-  { id: 's_tortilla_flour',      name: 'Flour Tortilla',  descriptor: '10"',          calories: 218, protein: 6,  carbs: 36, fat: 6  },
-  { id: 's_tortilla_corn',       name: 'Corn Tortilla',   descriptor: '2 small',      calories: 104, protein: 3,  carbs: 22, fat: 1  },
-  { id: 's_pita',                name: 'Pita Bread',      descriptor: '1 pocket',     calories: 165, protein: 5,  carbs: 33, fat: 1  },
+  // ─── Oats / Porridge ────────────────────────────────────────────────────
+  g('s_oats_dry',            'Oats',             'Dry',           389, 17,   66, 7),
+  g('s_oatmeal_cooked',      'Oatmeal',          'Cooked',         71,  2.5, 12, 1.5),
+  g('s_cream_of_rice',       'Cream of Rice',    'Cooked',         57,  1.1, 13, 0.1),
+  g('s_cream_of_wheat',      'Cream of Wheat',   'Cooked',         59,  2,   12, 0.4),
 
-  // ─── Potato / Root Veg ──────────────────────────────────────────────────
-  { id: 's_sweet_potato',        name: 'Sweet Potato',    descriptor: 'Baked, medium', calories: 103, protein: 2,  carbs: 24, fat: 0  },
-  { id: 's_white_potato',        name: 'Potato',          descriptor: 'Baked, medium', calories: 159, protein: 4,  carbs: 36, fat: 0  },
+  // ─── Potato ─────────────────────────────────────────────────────────────
+  g('s_russet_potato',       'Russet Potato',    'Baked',          77,  2,   17, 0.1),
+  g('s_red_potato',          'Red Potato',       'Boiled',         70,  2,   16, 0.1),
+  g('s_yukon_potato',        'Yukon Gold Potato','Boiled',         72,  2,   16, 0.1),
+  g('s_sweet_potato',        'Sweet Potato',     'Baked',          86,  1.6, 20, 0.1),
+  g('s_potato_boiled',       'Potato',           'Boiled',         87,  1.9, 20, 0.1),
+
+  // ─── Bread / Wraps ──────────────────────────────────────────────────────
+  g('s_rice_cakes',          'Rice Cakes',       'Plain',         387,  8,   81, 3),
+  g('s_bagel_plain',         'Bagel',            'Plain',         250, 10,   49, 2),
+  g('s_english_muffin',      'English Muffin',   'Plain',         227,  8,   44, 2),
+  g('s_corn_tortilla',       'Corn Tortilla',    undefined,       218,  5,   46, 3),
+  g('s_flour_tortilla',      'Flour Tortilla',   undefined,       303,  8,   50, 8),
+
+  // ─── Pasta ──────────────────────────────────────────────────────────────
+  g('s_pasta_cooked',        'Pasta',            'Cooked',        158,  6,   31, 0.9),
+  g('s_white_pasta_dry',     'Pasta',            'Dry',           371, 13,   75, 1.5),
+  g('s_ww_pasta_cooked',     'Whole Wheat Pasta','Cooked',        149,  5.5, 31, 1.5),
+
+  // ─── Other Grains ───────────────────────────────────────────────────────
+  g('s_couscous',            'Couscous',         'Cooked',        112,  3.8, 23, 0.2),
+  g('s_quinoa',              'Quinoa',           'Cooked',        120,  4.4, 22, 1.9),
+  g('s_grits',               'Grits',            'Cooked',         59,  1.5, 13, 0.2),
+  g('s_popcorn',             'Popcorn',          'Air-popped',    387, 13,   78, 5),
 
   // ─── Fruit ──────────────────────────────────────────────────────────────
-  { id: 's_banana',              name: 'Banana',          descriptor: 'Medium',       calories: 89,  protein: 1,  carbs: 23, fat: 0  },
-  { id: 's_apple',               name: 'Apple',           descriptor: 'Medium',       calories: 95,  protein: 0,  carbs: 25, fat: 0  },
-  { id: 's_grapes',              name: 'Grapes',          descriptor: '1 cup',        calories: 104, protein: 1,  carbs: 27, fat: 0  },
-  { id: 's_orange',              name: 'Orange',          descriptor: 'Medium',       calories: 62,  protein: 1,  carbs: 15, fat: 0  },
-  { id: 's_mango',               name: 'Mango',           descriptor: '1 cup sliced', calories: 107, protein: 1,  carbs: 28, fat: 0  },
-  { id: 's_blueberries',         name: 'Blueberries',     descriptor: '1 cup',        calories: 84,  protein: 1,  carbs: 21, fat: 0  },
-  { id: 's_strawberries',        name: 'Strawberries',    descriptor: '1 cup',        calories: 49,  protein: 1,  carbs: 12, fat: 0  },
+  g('s_banana',              'Banana',           undefined,        89,  1.1, 23, 0.3),
+  g('s_apple',               'Apple',            undefined,        52,  0.3, 14, 0.2),
+  g('s_orange',              'Orange',           undefined,        47,  0.9, 12, 0.1),
+  g('s_grapes',              'Grapes',           undefined,        69,  0.7, 18, 0.2),
+  g('s_blueberries',         'Blueberries',      undefined,        57,  0.7, 14, 0.3),
+  g('s_strawberries',        'Strawberries',     undefined,        32,  0.7,  8, 0.3),
+  g('s_raspberries',         'Raspberries',      undefined,        52,  1.2, 12, 0.7),
+  g('s_blackberries',        'Blackberries',     undefined,        43,  1.4, 10, 0.5),
+  g('s_pineapple',           'Pineapple',        undefined,        50,  0.5, 13, 0.1),
+  g('s_watermelon',          'Watermelon',       undefined,        30,  0.6,  8, 0.2),
+  g('s_cantaloupe',          'Cantaloupe',       undefined,        34,  0.8,  8, 0.2),
+  g('s_kiwi',                'Kiwi',             undefined,        61,  1.1, 15, 0.5),
+  g('s_mango',               'Mango',            undefined,        60,  0.8, 15, 0.4),
+  g('s_peach',               'Peach',            undefined,        39,  0.9, 10, 0.3),
+  g('s_pear',                'Pear',             undefined,        57,  0.4, 15, 0.1),
+  g('s_plum',                'Plum',             undefined,        46,  0.7, 11, 0.3),
+  g('s_raisins',             'Raisins',          undefined,       299,  3.1, 79, 0.5),
+  g('s_dates',               'Dates',            undefined,       277,  1.8, 75, 0.2),
 
   // ─── Vegetables ─────────────────────────────────────────────────────────
-  { id: 's_broccoli',            name: 'Broccoli',        descriptor: '1 cup',        calories: 55,  protein: 4,  carbs: 11, fat: 1  },
-  { id: 's_green_beans',         name: 'Green Beans',     descriptor: '1 cup',        calories: 44,  protein: 2,  carbs: 10, fat: 0  },
-  { id: 's_spinach',             name: 'Spinach',         descriptor: '2 cups',       calories: 14,  protein: 2,  carbs: 2,  fat: 0  },
-  { id: 's_asparagus',           name: 'Asparagus',       descriptor: '6 spears',     calories: 26,  protein: 3,  carbs: 5,  fat: 0  },
+  g('s_broccoli',            'Broccoli',         undefined,        34,  2.8,  7, 0.4),
+  g('s_cauliflower',         'Cauliflower',      undefined,        25,  1.9,  5, 0.3),
+  g('s_green_beans',         'Green Beans',      undefined,        31,  1.8,  7, 0.1),
+  g('s_asparagus',           'Asparagus',        undefined,        20,  2.2,  4, 0.1),
+  g('s_spinach',             'Spinach',          undefined,        23,  2.9,  3.6, 0.4),
+  g('s_kale',                'Kale',             undefined,        49,  4.3,  9, 0.9),
+  g('s_mixed_greens',        'Mixed Greens',     undefined,        25,  2,    4, 0.4),
+  g('s_romaine',             'Romaine Lettuce',  undefined,        17,  1.2,  3, 0.3),
+  g('s_cucumber',            'Cucumber',         undefined,        15,  0.7,  4, 0.1),
+  g('s_zucchini',            'Zucchini',         undefined,        17,  1.2,  3, 0.3),
+  g('s_yellow_squash',       'Yellow Squash',    undefined,        20,  1.5,  4, 0.2),
+  g('s_bell_pepper',         'Bell Pepper',      undefined,        31,  1,    7, 0.3),
+  g('s_onion',               'Onion',            undefined,        40,  1.1,  9, 0.1),
+  g('s_mushrooms',           'Mushrooms',        undefined,        22,  3.1,  3, 0.3),
+  g('s_tomato',              'Tomato',           undefined,        18,  0.9,  4, 0.2),
+  g('s_brussels_sprouts',    'Brussels Sprouts', undefined,        43,  3.4,  9, 0.3),
+  g('s_carrots',             'Carrots',          undefined,        41,  0.9, 10, 0.2),
+  g('s_cabbage',             'Cabbage',          undefined,        25,  1.3,  6, 0.1),
+  g('s_celery',              'Celery',           undefined,        16,  0.7,  3, 0.2),
+  g('s_edamame',             'Edamame',          'Shelled, cooked', 121, 11, 10, 5),
 
-  // ─── Fats / Oils ────────────────────────────────────────────────────────
-  { id: 's_avocado',             name: 'Avocado',         descriptor: 'Half',         calories: 161, protein: 2,  carbs: 9,  fat: 15 },
-  { id: 's_peanut_butter',       name: 'Peanut Butter',   descriptor: '2 tbsp',       calories: 188, protein: 8,  carbs: 6,  fat: 16 },
-  { id: 's_almond_butter',       name: 'Almond Butter',   descriptor: '2 tbsp',       calories: 196, protein: 7,  carbs: 6,  fat: 18 },
-  { id: 's_almonds',             name: 'Almonds',         descriptor: '1 oz',         calories: 164, protein: 6,  carbs: 6,  fat: 14 },
-  { id: 's_walnuts',             name: 'Walnuts',         descriptor: '1 oz',         calories: 185, protein: 4,  carbs: 4,  fat: 18 },
-  { id: 's_cashews',             name: 'Cashews',         descriptor: '1 oz',         calories: 157, protein: 5,  carbs: 9,  fat: 12 },
-  { id: 's_mixed_nuts',          name: 'Mixed Nuts',      descriptor: '1 oz',         calories: 170, protein: 5,  carbs: 7,  fat: 15 },
-  { id: 's_olive_oil',           name: 'Olive Oil',       descriptor: '1 tbsp',       calories: 119, protein: 0,  carbs: 0,  fat: 14 },
-  { id: 's_coconut_oil',         name: 'Coconut Oil',     descriptor: '1 tbsp',       calories: 121, protein: 0,  carbs: 0,  fat: 14 },
-  { id: 's_dark_chocolate',      name: 'Dark Chocolate',  descriptor: '1 oz',         calories: 170, protein: 2,  carbs: 19, fat: 12 },
-
-  // ─── Snacks / Bars ──────────────────────────────────────────────────────
-  { id: 's_protein_bar',         name: 'Protein Bar',                                 calories: 250, protein: 20, carbs: 25, fat: 8  },
-  { id: 's_rice_cakes',          name: 'Rice Cakes',      descriptor: '2 cakes',      calories: 70,  protein: 1,  carbs: 15, fat: 0  },
-  { id: 's_jerky',               name: 'Jerky',           descriptor: '1 oz',         calories: 80,  protein: 10, carbs: 3,  fat: 2  },
-  { id: 's_granola_bar',         name: 'Granola Bar',                                 calories: 193, protein: 4,  carbs: 28, fat: 8  },
-  { id: 's_hummus',              name: 'Hummus',          descriptor: '1/4 cup',      calories: 100, protein: 5,  carbs: 9,  fat: 6  },
-  { id: 's_popcorn',             name: 'Popcorn',         descriptor: '3 cups',       calories: 93,  protein: 3,  carbs: 19, fat: 1  },
-  { id: 's_trail_mix',           name: 'Trail Mix',       descriptor: '1/4 cup',      calories: 173, protein: 5,  carbs: 17, fat: 10 },
+  // ─── Fats ───────────────────────────────────────────────────────────────
+  g('s_avocado',             'Avocado',          undefined,       160,  2,    9, 15),
+  g('s_olive_oil',           'Olive Oil',        undefined,       884,  0,    0, 100),
+  g('s_coconut_oil',         'Coconut Oil',      undefined,       892,  0,    0, 100),
+  g('s_butter',              'Butter',           undefined,       717,  1,    0, 81),
+  g('s_almonds',             'Almonds',          undefined,       579, 21,   22, 50),
+  g('s_walnuts',             'Walnuts',          undefined,       654, 15,   14, 65),
+  g('s_cashews',             'Cashews',          undefined,       553, 18,   30, 44),
+  g('s_pistachios',          'Pistachios',       undefined,       560, 20,   28, 45),
+  g('s_natural_peanut_butter', 'Peanut Butter',  'Natural',       588, 25,   20, 50),
+  g('s_natural_almond_butter', 'Almond Butter',  'Natural',       614, 21,   19, 56),
+  g('s_chia_seeds',          'Chia Seeds',       undefined,       486, 17,   42, 31),
+  g('s_flax_seeds',          'Flax Seeds',       undefined,       534, 18,   29, 42),
 ]
 
 // ─── 4-tier ranked search ─────────────────────────────────────────────────

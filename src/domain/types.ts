@@ -61,6 +61,28 @@ export interface SavedFood {
   lastUsedAt?: string
 }
 
+// ─── My Meals (Phase 14) ──────────────────────────────────────────────────
+// Saved multi-food meals for one-tap logging.
+// Each MealItem stores serving-level macro totals (not per-100g).
+
+export interface MealItem {
+  id: string
+  name: string
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
+export interface MyMeal {
+  id: string
+  name: string
+  items: MealItem[]
+  createdAt: string
+  useCount: number
+  lastUsedAt?: string
+}
+
 // ─── Food ─────────────────────────────────────────────────────────────────
 
 export type FoodSource = 'manual' | 'barcode' | 'search' | 'quickadd' | 'labelscan'
@@ -123,6 +145,7 @@ export type FoodInputMode =
   | 'recent'
   | 'favorites'
   | 'myFoods'
+  | 'myMeals'
   | 'manual'
   | 'quickAdd'
   | 'mealTemplate'

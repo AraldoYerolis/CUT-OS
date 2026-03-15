@@ -1,0 +1,514 @@
+/* ─── Shared scroll + footer layout ─── */
+
+.scrollContent {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-4);
+}
+
+.footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ─── Back button ─── */
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── Food search ─── */
+
+.searchWrap {
+  padding: 0 var(--space-4) var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.searchRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+  width: 100%;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-5) var(--space-2) var(--space-3);
+  color: var(--color-text-primary);
+  /* 1rem minimum — prevents Safari auto-zoom on focus */
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.searchInput:focus {
+  border-color: var(--color-accent);
+}
+
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.searchClear {
+  position: absolute;
+  right: var(--space-2);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: var(--space-1);
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── Search results ─── */
+
+.searchResults {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.resultItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.resultItem:last-child {
+  border-bottom: none;
+}
+
+.resultItem:active {
+  background: var(--color-surface);
+}
+
+.resultName {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resultDesc {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.resultCal {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.resultEmpty {
+  padding: var(--space-3) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* ─── My Foods chips ─── */
+
+.myFoodsChips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.chipsLabel {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  touch-action: pan-x;
+}
+
+.foodChip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.foodChip:active {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent);
+}
+
+.foodChip span:first-child {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--weight-medium);
+}
+
+.chipCal {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Pending food widget ─── */
+
+.pendingWidget {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pendingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.pendingName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pendingCancel {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: var(--space-1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pendingPreview {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  padding: 0 var(--space-1);
+}
+
+/* ─── Draft items list ─── */
+
+.draftSection {
+  padding: 0 var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.draftLabel {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-top: var(--space-2);
+}
+
+.draftRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.draftRow:last-of-type {
+  border-bottom: none;
+}
+
+.draftInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) 0;
+}
+
+.draftName {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.draftMacros {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.draftRemove {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.draftRemove:active {
+  color: var(--color-danger);
+}
+
+.draftTotals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── List view ─── */
+
+.listContent {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  display: flex;
+  flex-direction: column;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4) 0;
+  gap: var(--space-3);
+}
+
+.newMealBtn {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-accent-dim);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.newMealBtn:active {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* ─── Filter row ─── */
+
+.filterRow {
+  padding: var(--space-3) var(--space-4) 0;
+}
+
+.filterInput {
+  width: 100%;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.filterInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.filterInput:focus {
+  border-color: var(--color-accent);
+}
+
+.filterInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* ─── Meal rows ─── */
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mealRow {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--color-border-subtle);
+  min-height: 56px;
+}
+
+.mealRow:last-child {
+  border-bottom: none;
+}
+
+.logBtn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.logBtn:active {
+  background: var(--color-surface-raised);
+}
+
+.mealName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mealMeta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.deleteBtn {
+  flex-shrink: 0;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.deleteBtn:active {
+  color: var(--color-danger);
+}
+
+.noMatch {
+  padding: var(--space-6) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* ─── Empty state ─── */
+
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10) var(--space-6);
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.emptyNote {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}

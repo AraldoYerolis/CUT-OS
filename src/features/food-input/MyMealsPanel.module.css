@@ -303,6 +303,13 @@
   text-overflow: ellipsis;
 }
 
+.draftAmount {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
 .draftMacros {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
@@ -460,6 +467,16 @@
 .mealMeta {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.mealIngredients {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
 }
 

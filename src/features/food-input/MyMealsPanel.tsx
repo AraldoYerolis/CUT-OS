@@ -113,6 +113,8 @@ function Builder({ myFoods, editMeal, onSave, onBack }: BuilderProps) {
       protein:  m.protein,
       carbs:    m.carbs,
       fat:      m.fat,
+      amount:   qty,
+      unit:     pending.baseUnit,
     }
     setDraftItems(prev => [...prev, item])
     setPending(null)
@@ -297,6 +299,11 @@ function Builder({ myFoods, editMeal, onSave, onBack }: BuilderProps) {
               <div key={item.id} className={styles.draftRow}>
                 <div className={styles.draftInfo}>
                   <span className={styles.draftName}>{item.name}</span>
+                  {item.amount !== undefined && item.unit && (
+                    <span className={styles.draftAmount}>
+                      {item.amount}\u202f{item.unit}
+                    </span>
+                  )}
                   <span className={styles.draftMacros}>
                     {item.calories} kcal · {item.protein}g P · {item.carbs}g C · {item.fat}g F
                   </span>
@@ -473,6 +480,14 @@ export function MyMealsPanel({ onCancel }: FoodInputContext) {
                     <span className={styles.mealMeta}>
                       {meal.items.length} item{meal.items.length !== 1 ? 's' : ''} · {totalKcal} kcal
                     </span>
+                    {meal.items.some(i => i.amount !== undefined && i.unit) && (
+                      <span className={styles.mealIngredients}>
+                        {meal.items
+                          .filter(i => i.amount !== undefined && i.unit)
+                          .map(i => `${i.amount}\u202f${i.unit} ${i.name}`)
+                          .join(' · ')}
+                      </span>
+                    )}
                   </button>
                   <button
                     type="button"

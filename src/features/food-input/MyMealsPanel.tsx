@@ -301,7 +301,7 @@ function Builder({ myFoods, editMeal, onSave, onBack }: BuilderProps) {
                   <span className={styles.draftName}>{item.name}</span>
                   {item.amount !== undefined && item.unit && (
                     <span className={styles.draftAmount}>
-                      {item.amount}\u202f{item.unit}
+                      {`${item.amount} ${item.unit}`}
                     </span>
                   )}
                   <span className={styles.draftMacros}>
@@ -484,7 +484,7 @@ export function MyMealsPanel({ onCancel }: FoodInputContext) {
                       <span className={styles.mealIngredients}>
                         {meal.items
                           .filter(i => i.amount !== undefined && i.unit)
-                          .map(i => `${i.amount}\u202f${i.unit} ${i.name}`)
+                          .map(i => `${i.amount} ${i.unit} ${i.name}`)
                           .join(' · ')}
                       </span>
                     )}

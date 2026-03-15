@@ -60,6 +60,155 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ─── Food search (additive — Phase 12A) ─── */
+
+.searchWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  min-height: 44px;
+  transition: border-color var(--transition-fast);
+}
+
+.searchRow:focus-within {
+  border-color: var(--color-accent);
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  padding: var(--space-2) 0;
+  /* remove browser search decorations */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.searchClear {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: var(--space-1);
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Selected food confirmation badge */
+.selectedBadge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-accent-dim);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+.selectedBadgeName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectedBadgeCal {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+  margin-left: var(--space-2);
+}
+
+/* Results list */
+.searchResults {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.resultItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-3) var(--space-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--transition-fast);
+}
+
+.searchResults li:last-child .resultItem {
+  border-bottom: none;
+}
+
+.resultItem:active {
+  background: var(--color-accent-dim);
+}
+
+.resultName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultDesc {
+  font-weight: var(--weight-normal);
+  color: var(--color-text-muted);
+}
+
+.resultCal {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  margin-left: var(--space-2);
+}
+
+.resultEmpty {
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
 /* Sticky CTA — direct sibling of .scrollContent inside .panelArea */
 .footer {
   position: sticky;

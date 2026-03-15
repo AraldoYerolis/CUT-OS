@@ -13,7 +13,10 @@ import type {
   AppSettings,
   FoodInputMode,
   MacroTargets,
+  MealSlot,
   SavedFood,
+  MyMeal,
+  MealItem,
 } from '../domain/types'
 
 // ─── State shape ──────────────────────────────────────────────────────────
@@ -40,6 +43,7 @@ export interface AppState {
   recents: FoodItem[]
   templates: MealTemplate[]
   myFoods: SavedFood[]          // Phase 13 — saved reusable foods
+  myMeals: MyMeal[]             // Phase 14 — saved multi-food meals
 
   // Settings
   settings: AppSettings
@@ -72,6 +76,11 @@ interface AppActions {
   // My Foods (Phase 13)
   saveToMyFoods(food: FoodItem): void
   removeFromMyFoods(id: string): void
+
+  // My Meals (Phase 14)
+  saveMyMeal(meal: MyMeal): void
+  deleteMyMeal(id: string): void
+  logMyMeal(mealId: string, date: string, slot: MealSlot): void
 
   // Templates
   saveTemplate(template: MealTemplate): void
@@ -114,6 +123,7 @@ export const useStore = create<AppStore>()(
       recents: [],
       templates: [],
       myFoods: [],
+      myMeals: [],
       settings: { ...DEFAULT_SETTINGS },
       foodInput: { ...initialFoodInput },
 
@@ -216,6 +226,62 @@ export const useStore = create<AppStore>()(
           myFoods: state.myFoods.filter((f) => f.id !== id),
         })),
 
+      // Phase 14 — My Meals
+      saveMyMeal: (meal) =>
+        set((state) => ({
+          myMeals: [meal, ...state.myMeals],
+        })),
+
+      deleteMyMeal: (id) =>
+        set((state) => ({
+          myMeals: state.myMeals.filter((m) => m.id !== id),
+        })),
+
+      logMyMeal: (mealId, date, slot) =>
+        set((state) => {
+          const meal = state.myMeals.find((m) => m.id === mealId)
+          if (!meal) return state
+          const now = new Date().toISOString()
+          const newEntries: LoggedFood[] = meal.items.map((item: MealItem) => {
+            const foodItem: FoodItem = {
+              id: generateId(),
+              name: item.name,
+              macros: {
+                calories: item.calories,
+                protein: item.protein,
+                carbs: item.carbs,
+                fat: item.fat,
+              },
+              servingSizeG: 100,
+              source: 'manual',
+              createdAt: now,
+            }
+            return {
+              id: generateId(),
+              date,
+              foodItem,
+              quantityG: 100,
+              macros: {
+                calories: item.calories,
+                protein: item.protein,
+                carbs: item.carbs,
+                fat: item.fat,
+              },
+              mealSlot: slot,
+              loggedAt: now,
+            }
+          })
+          const existing = state.logs[date] ?? []
+          return {
+            logs: { ...state.logs, [date]: [...existing, ...newEntries] },
+            myMeals: state.myMeals.map((m) =>
+              m.id === mealId
+                ? { ...m, useCount: m.useCount + 1, lastUsedAt: now }
+                : m
+            ),
+          }
+        }),
+
       saveTemplate: (template) =>
         set((state) => ({
           templates: [template, ...state.templates],
@@ -272,6 +338,7 @@ export const useStore = create<AppStore>()(
         recents: state.recents,
         templates: state.templates,
         myFoods: state.myFoods,
+        myMeals: state.myMeals,
         settings: state.settings,
       }),
       onRehydrateStorage: () => (state) => {
@@ -326,3 +393,4 @@ export const selectRecents = (s: AppStore) => s.recents
 export const selectFavorites = (s: AppStore) => s.favorites
 export const selectTemplates = (s: AppStore) => s.templates
 export const selectMyFoods = (s: AppStore) => s.myFoods
+export const selectMyMeals = (s: AppStore) => s.myMeals

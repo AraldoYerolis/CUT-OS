@@ -2,6 +2,7 @@ import { registerFoodInputHandler } from '../../services/foodInput/FoodInputServ
 import { RecentsPanel } from './RecentsPanel'
 import { FavoritesPanel } from './FavoritesPanel'
 import { MyFoodsPanel } from './MyFoodsPanel'
+import { MyMealsPanel } from './MyMealsPanel'
 import { TemplatesPanel } from './TemplatesPanel'
 import { ManualEntryPanel } from './ManualEntryPanel'
 import { QuickAddPanel } from './QuickAddPanel'
@@ -19,6 +20,13 @@ registerFoodInputHandler({
   label: 'My Foods',
   isReady: true,
   Panel: MyFoodsPanel,
+})
+
+registerFoodInputHandler({
+  mode: 'myMeals',
+  label: 'My Meals',
+  isReady: true,
+  Panel: MyMealsPanel,
 })
 
 registerFoodInputHandler({

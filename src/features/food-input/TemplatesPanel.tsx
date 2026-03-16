@@ -5,12 +5,13 @@ import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { MealSlotPicker } from './MealSlotPicker'
 import { computeMacros, sumMacros } from '../../domain/calculations'
-import { searchFoods, type SearchableFood } from '../../domain/searchFoods'
+import { searchFoods, getFoodById, findFoodByName, type SearchableFood } from '../../domain/searchFoods'
 import { generateId } from '../../utils/id'
 import type {
   MealTemplate,
   TemplateItem,
   FoodItem,
+  MacrosPer100g,
   MealSlot,
   LoggedFood,
   MealItem,
@@ -34,8 +35,30 @@ function searchFoodToFoodItem(sf: SearchableFood): FoodItem {
     },
     servingSizeG: 100,
     source:       'search',
+    searchFoodId: sf.id,
     createdAt:    new Date().toISOString(),
   }
+}
+
+/**
+ * Resolve the best available per-100g macro basis for a FoodItem.
+ * Priority: linked searchFoodId → name lookup → stored macros.
+ * This corrects legacy items where scaled totals were accidentally stored
+ * as the per-100g basis (e.g. 392 kcal for 200g saved as "per 100g").
+ */
+function resolveMacrosPer100g(foodItem: FoodItem): MacrosPer100g {
+  const sf = (foodItem.searchFoodId ? getFoodById(foodItem.searchFoodId) : undefined)
+    ?? findFoodByName(foodItem.name)
+  if (sf) {
+    const f = 100 / sf.baseAmount
+    return {
+      calories: Math.round(sf.calories * f),
+      protein:  Math.round(sf.protein  * f * 10) / 10,
+      carbs:    Math.round(sf.carbs    * f * 10) / 10,
+      fat:      Math.round(sf.fat      * f * 10) / 10,
+    }
+  }
+  return foodItem.macros
 }
 
 // ─── EditView ─────────────────────────────────────────────────────────────
@@ -181,7 +204,7 @@ function EditView({ template, onSave, onBack }: EditViewProps) {
               const q  = parseFloat(item.quantityStr)
               const m  = (!item.quantityStr.trim() || isNaN(q) || q <= 0)
                 ? null
-                : computeMacros(item.foodItem.macros, q)
+                : computeMacros(resolveMacrosPer100g(item.foodItem), q)
               return (
                 <div key={item.key} className={styles.editItemRow}>
                   <div className={styles.editItemInfo}>
@@ -349,7 +372,7 @@ function UseView({ template, activeDate, onLog, onSaveAsMeal, onBack }: UseViewP
   function liveMacros(index: number) {
     const q = parseFloat(quantities[index])
     if (!quantities[index].trim() || isNaN(q) || q <= 0) return null
-    return computeMacros(template.items[index].foodItem.macros, q)
+    return computeMacros(resolveMacrosPer100g(template.items[index].foodItem), q)
   }
 
   const validMacros = template.items
@@ -370,7 +393,7 @@ function UseView({ template, activeDate, onLog, onSaveAsMeal, onBack }: UseViewP
         date:      activeDate,
         foodItem:  item.foodItem,
         quantityG: q,
-        macros:    computeMacros(item.foodItem.macros, q),
+        macros:    computeMacros(resolveMacrosPer100g(item.foodItem), q),
         mealSlot:  slot,
         loggedAt:  now,
       })

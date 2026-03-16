@@ -220,3 +220,15 @@ export function searchFoods(query: string, limit = 8): SearchableFood[] {
     .slice(0, limit)
     .map(r => r.food)
 }
+
+export function getFoodById(id: string): SearchableFood | undefined {
+  return SEARCHABLE_FOODS.find(f => f.id === id)
+}
+
+export function findFoodByName(name: string): SearchableFood | undefined {
+  const lower = name.toLowerCase()
+  return SEARCHABLE_FOODS.find(f => {
+    const full = [f.name, f.descriptor].filter(Boolean).join(' — ').toLowerCase()
+    return full === lower || f.name.toLowerCase() === lower
+  })
+}

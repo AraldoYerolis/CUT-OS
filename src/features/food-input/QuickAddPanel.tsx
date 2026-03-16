@@ -203,15 +203,38 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
 
   // ─── Submit ────────────────────────────────────────────────────────────
   function handleSubmit() {
-    // If a food is selected, require a valid quantity
+    const now = new Date().toISOString()
+
+    // ── Search-mode path: normalize to per-100g, use actual quantity ───────
     if (selectedFood !== null) {
       const q = parseFloat(quantity)
       if (!quantity.trim() || isNaN(q) || q <= 0) {
         setCalError('Enter an amount')
         return
       }
+      setCalError('')
+      // Normalize search food macros to per-100g so templates/meals can
+      // re-scale correctly when a different quantity is entered later.
+      const factor100 = 100 / selectedFood.baseAmount
+      const food: FoodItem = {
+        id: generateId(),
+        name: label.trim() || selectedFood.name,
+        macros: {
+          calories: Math.round(selectedFood.calories * factor100),
+          protein:  Math.round(selectedFood.protein  * factor100 * 10) / 10,
+          carbs:    Math.round(selectedFood.carbs     * factor100 * 10) / 10,
+          fat:      Math.round(selectedFood.fat       * factor100 * 10) / 10,
+        },
+        servingSizeG: selectedFood.baseAmount,
+        source: 'search',
+        searchFoodId: selectedFood.id,
+        createdAt: now,
+      }
+      onConfirm(food, q, slot)
+      return
     }
 
+    // ── Manual / chip-preset path (no search food selected) ───────────────
     const cal = Math.round(parseFloat(calories))
     if (!calories || isNaN(cal) || cal <= 0) {
       setCalError('Enter a calorie amount')
@@ -230,7 +253,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
       },
       servingSizeG: 100,
       source: 'quickadd',
-      createdAt: new Date().toISOString(),
+      createdAt: now,
     }
     onConfirm(food, 100, slot)
   }

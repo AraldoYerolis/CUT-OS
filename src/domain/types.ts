@@ -102,6 +102,9 @@ export interface FoodItem {
   servingLabel?: string
   source: FoodSource
   createdAt: string
+  // Links back to the SEARCHABLE_FOODS entry this item was created from.
+  // Used to resolve fresh per-100g macros when displaying templates/meals.
+  searchFoodId?: string
 }
 
 // ─── Log ──────────────────────────────────────────────────────────────────

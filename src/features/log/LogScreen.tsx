@@ -7,7 +7,7 @@ import { EditEntrySheet } from './EditEntrySheet'
 import { SaveTemplateSheet } from './SaveTemplateSheet'
 import { sumMacros } from '../../domain/calculations'
 import { formatCalories } from '../../utils/format'
-import { toDateKey, fromDateKey } from '../../utils/date'
+import { dateLabel } from '../../utils/date'
 import { MEAL_SLOT_LABELS } from '../../domain/constants'
 import type { LoggedFood, MacroSnapshot, MealSlot } from '../../domain/types'
 import styles from './LogScreen.module.css'
@@ -19,19 +19,6 @@ function fmtTime(iso: string): string {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-  })
-}
-
-function fmtDayLabel(dateKey: string): string {
-  const today    = toDateKey()
-  const yesterday = toDateKey(new Date(Date.now() - 86_400_000))
-  if (dateKey === today)     return 'Today'
-  if (dateKey === yesterday) return 'Yesterday'
-  const d = fromDateKey(dateKey)
-  return d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month:   'short',
-    day:     'numeric',
   })
 }
 
@@ -79,12 +66,13 @@ export function LogScreen() {
   // Today's entries (for SaveTemplateSheet — always keyed to the current day)
   const todayEntries = logs[activeDate] ?? NO_ENTRIES
 
-  // All dates that have at least one logged entry, sorted newest → oldest
-  const sortedDates = useMemo(() =>
+  // All dates with entries + their pre-computed event groups, sorted newest → oldest.
+  // Pre-computed here so buildEvents() is not called on every render.
+  const datesWithEvents = useMemo(() =>
     Object.entries(logs)
       .filter(([, entries]) => entries.length > 0)
-      .map(([date]) => date)
-      .sort((a, b) => b.localeCompare(a)),
+      .map(([date, entries]) => ({ date, events: buildEvents(entries) }))
+      .sort((a, b) => b.date.localeCompare(a.date)),
     [logs]
   )
 
@@ -111,7 +99,7 @@ export function LogScreen() {
     <Screen>
       <Header title="Log" right={saveTemplateBtn} />
 
-      {sortedDates.length === 0 ? (
+      {datesWithEvents.length === 0 ? (
         <EmptyState
           icon="≡"
           title="Nothing logged yet"
@@ -119,87 +107,84 @@ export function LogScreen() {
         />
       ) : (
         <div className={styles.container}>
-          {sortedDates.map(dateKey => {
-            const events = buildEvents(logs[dateKey] ?? NO_ENTRIES)
-            return (
-              <div key={dateKey} className={styles.daySection}>
+          {datesWithEvents.map(({ date: dateKey, events }) => (
+            <div key={dateKey} className={styles.daySection}>
 
-                {/* ── Day header ── */}
-                <div className={styles.dayHeader}>
-                  <span className={styles.dayLabel}>{fmtDayLabel(dateKey)}</span>
-                </div>
-
-                {/* ── Log events ── */}
-                {events.map(event => {
-                  const isExpanded = expandedEvents.has(event.loggedAt)
-                  return (
-                    <div key={event.loggedAt} className={styles.eventCard}>
-
-                      {/* Collapsed header — always visible, click to expand */}
-                      <button
-                        type="button"
-                        className={styles.eventHeader}
-                        onClick={() => toggleEvent(event.loggedAt)}
-                        aria-expanded={isExpanded}
-                      >
-                        <div className={styles.eventTop}>
-                          <span className={styles.eventTime}>{fmtTime(event.loggedAt)}</span>
-                          <span className={styles.eventDot} aria-hidden>·</span>
-                          <span className={styles.eventSlot}>
-                            {MEAL_SLOT_LABELS[event.mealSlot]}
-                          </span>
-                          <span className={styles.eventSpacer} />
-                          <span className={styles.eventKcal}>
-                            {formatCalories(event.totals.calories)} kcal
-                          </span>
-                          <span className={styles.eventChevron} aria-hidden>
-                            {isExpanded ? '▾' : '▸'}
-                          </span>
-                        </div>
-                        <div className={styles.eventMacros}>
-                          P {Math.round(event.totals.protein)}
-                          {' · '}C {Math.round(event.totals.carbs)}
-                          {' · '}F {Math.round(event.totals.fat)}g
-                        </div>
-                      </button>
-
-                      {/* Expanded item list */}
-                      {isExpanded && (
-                        <div className={styles.eventItems}>
-                          {event.entries.map(entry => (
-                            <button
-                              key={entry.id}
-                              type="button"
-                              className={styles.itemRow}
-                              onClick={() => setSelectedEntry(entry)}
-                            >
-                              <div className={styles.itemLeft}>
-                                <span className={styles.itemName}>
-                                  {entry.foodItem.name}
-                                </span>
-                                <span className={styles.itemMacros}>
-                                  {entry.quantityG}g
-                                  {' · '}P {Math.round(entry.macros.protein)}
-                                  {' · '}C {Math.round(entry.macros.carbs)}
-                                  {' · '}F {Math.round(entry.macros.fat)}g
-                                </span>
-                              </div>
-                              <div className={styles.itemRight}>
-                                <span className={styles.itemCalories}>
-                                  {formatCalories(entry.macros.calories)}
-                                </span>
-                                <span className={styles.entryUnit}>kcal</span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+              {/* ── Day header ── */}
+              <div className={styles.dayHeader}>
+                <span className={styles.dayLabel}>{dateLabel(dateKey)}</span>
               </div>
-            )
-          })}
+
+              {/* ── Log events ── */}
+              {events.map(event => {
+                const isExpanded = expandedEvents.has(event.loggedAt)
+                return (
+                  <div key={event.loggedAt} className={styles.eventCard}>
+
+                    {/* Collapsed header — always visible, click to expand */}
+                    <button
+                      type="button"
+                      className={styles.eventHeader}
+                      onClick={() => toggleEvent(event.loggedAt)}
+                      aria-expanded={isExpanded}
+                    >
+                      <div className={styles.eventTop}>
+                        <span className={styles.eventTime}>{fmtTime(event.loggedAt)}</span>
+                        <span className={styles.eventDot} aria-hidden>·</span>
+                        <span className={styles.eventSlot}>
+                          {MEAL_SLOT_LABELS[event.mealSlot]}
+                        </span>
+                        <span className={styles.eventSpacer} />
+                        <span className={styles.eventKcal}>
+                          {formatCalories(event.totals.calories)} kcal
+                        </span>
+                        <span className={styles.eventChevron} aria-hidden>
+                          {isExpanded ? '▾' : '▸'}
+                        </span>
+                      </div>
+                      <div className={styles.eventMacros}>
+                        P {Math.round(event.totals.protein)}
+                        {' · '}C {Math.round(event.totals.carbs)}
+                        {' · '}F {Math.round(event.totals.fat)}g
+                      </div>
+                    </button>
+
+                    {/* Expanded item list */}
+                    {isExpanded && (
+                      <div className={styles.eventItems}>
+                        {event.entries.map(entry => (
+                          <button
+                            key={entry.id}
+                            type="button"
+                            className={styles.itemRow}
+                            onClick={() => setSelectedEntry(entry)}
+                          >
+                            <div className={styles.itemLeft}>
+                              <span className={styles.itemName}>
+                                {entry.foodItem.name}
+                              </span>
+                              <span className={styles.itemMacros}>
+                                {entry.quantityG}g
+                                {' · '}P {Math.round(entry.macros.protein)}
+                                {' · '}C {Math.round(entry.macros.carbs)}
+                                {' · '}F {Math.round(entry.macros.fat)}g
+                              </span>
+                            </div>
+                            <div className={styles.itemRight}>
+                              <span className={styles.itemCalories}>
+                                {formatCalories(entry.macros.calories)}
+                              </span>
+                              <span className={styles.entryUnit}>kcal</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
         </div>
       )}
 

@@ -1,0 +1,90 @@
+/* ─── History list ──────────────────────────────────────────────────────── */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3) var(--space-5) var(--space-8);
+  gap: var(--space-3);
+}
+
+/* ─── Day card ──────────────────────────────────────────────────────────── */
+
+.dayCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dayCardTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.dayCardLabel {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+}
+
+.dayCardKcal {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.dayCardKcalTarget {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-normal);
+  color: var(--color-text-muted);
+}
+
+/* ─── Calorie progress bar ──────────────────────────────────────────────── */
+
+.progressBar {
+  height: 3px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
+  max-width: 100%;
+}
+
+/* ─── Macro row ─────────────────────────────────────────────────────────── */
+
+.dayCardMacros {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.macroVal {
+  color: var(--color-text-primary);
+  font-weight: var(--weight-medium);
+}
+
+.macroDot {
+  color: var(--color-text-muted);
+}
+
+.entryCount {
+  color: var(--color-text-muted);
+  margin-left: auto;
+}

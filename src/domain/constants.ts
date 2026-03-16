@@ -8,11 +8,12 @@ export const MEAL_SLOT_LABELS: Record<MealSlot, string> = {
   untagged: 'Other',
 }
 
+// 'snack' is intentionally excluded from the picker — consolidated into 'untagged' (Other).
+// It remains in MealSlot and MEAL_SLOT_LABELS so existing logged entries still display.
 export const MEAL_SLOTS: MealSlot[] = [
   'breakfast',
   'lunch',
   'dinner',
-  'snack',
   'untagged',
 ]
 

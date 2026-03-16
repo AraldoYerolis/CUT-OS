@@ -1,90 +1,12 @@
 import { useState } from 'react'
-import {
-  useStore,
-  selectUser,
-  selectRecents,
-  selectFavorites,
-  selectMyFoods,
-} from '../../store'
 import type { FoodInputContext } from '../../services/foodInput/FoodInputService'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { MealSlotPicker } from './MealSlotPicker'
 import { generateId } from '../../utils/id'
-import {
-  PRESET_FOOD_BY_ID,
-  DEFAULT_QUICK_PRESET_IDS,
-} from '../../domain/foodPresets'
 import { searchFoods, type SearchableFood } from '../../domain/searchFoods'
-import type { FoodItem, MealSlot, SavedFood } from '../../domain/types'
+import type { FoodItem, MealSlot } from '../../domain/types'
 import styles from './QuickAddPanel.module.css'
-
-// ─── Personalized shortcut chips ─────────────────────────────────────────
-// Unified shape for all chip sources (recents, favorites, my foods, fallback).
-interface QuickChip {
-  id: string
-  name: string
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
-}
-
-function buildShortcuts(
-  recents: FoodItem[],
-  favorites: FoodItem[],
-  myFoods: SavedFood[],
-  maxTotal = 6,
-): QuickChip[] {
-  const seen = new Set<string>()
-  const chips: QuickChip[] = []
-
-  function fromFoodItem(food: FoodItem): QuickChip {
-    const s = food.servingSizeG
-    return {
-      id:       food.id,
-      name:     food.name,
-      calories: Math.round(food.macros.calories * s / 100),
-      protein:  Math.round(food.macros.protein  * s / 100 * 10) / 10,
-      carbs:    Math.round(food.macros.carbs    * s / 100 * 10) / 10,
-      fat:      Math.round(food.macros.fat      * s / 100 * 10) / 10,
-    }
-  }
-
-  function tryAdd(chip: QuickChip) {
-    if (chips.length >= maxTotal) return
-    const key = chip.name.trim().toLowerCase()
-    if (seen.has(key)) return
-    seen.add(key)
-    chips.push(chip)
-  }
-
-  // Tier 1: 3 most recent foods
-  for (const f of recents.slice(0, 3)) tryAdd(fromFoodItem(f))
-
-  // Tier 2: first 2 favorites
-  for (const f of favorites.slice(0, 2)) tryAdd(fromFoodItem(f))
-
-  // Tier 3: most-used My Foods (sorted by lastUsedAt/savedAt)
-  const sortedMyFoods = [...myFoods].sort((a, b) =>
-    (b.lastUsedAt ?? b.savedAt).localeCompare(a.lastUsedAt ?? a.savedAt)
-  )
-  for (const f of sortedMyFoods.slice(0, 3)) {
-    tryAdd({ id: f.id, name: f.name, calories: f.calories, protein: f.protein, carbs: f.carbs, fat: f.fat })
-  }
-
-  // Tier 4: static fallback — only used when user has almost no data
-  if (chips.length < 2) {
-    for (const id of DEFAULT_QUICK_PRESET_IDS) {
-      if (chips.length >= maxTotal) break
-      const p = PRESET_FOOD_BY_ID.get(id)
-      if (!p) continue
-      tryAdd({ id: p.id, name: p.name, calories: p.calories, protein: p.protein, carbs: p.carbs, fat: p.fat })
-    }
-  }
-
-  return chips
-}
 
 // Round to 1 decimal, strip trailing .0 → "31" not "31.0"
 function roundMacro(v: number): string {
@@ -93,12 +15,7 @@ function roundMacro(v: number): string {
 }
 
 export function QuickAddPanel({ onConfirm }: FoodInputContext) {
-  const user      = useStore(selectUser)
-  const recents   = useStore(selectRecents)
-  const favorites = useStore(selectFavorites)
-  const myFoods   = useStore(selectMyFoods)
-
-  // ─── Direct-entry state (unchanged) ───────────────────────────────────
+  // ─── Direct-entry state ────────────────────────────────────────────────
   const [calories, setCalories] = useState('')
   const [protein, setProtein]   = useState('')
   const [carbs, setCarbs]       = useState('')
@@ -107,11 +24,11 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
   const [slot, setSlot]         = useState<MealSlot>('untagged')
   const [calError, setCalError] = useState('')
 
-  // ─── Search state (Phase 12A) ──────────────────────────────────────────
+  // ─── Search state ──────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery]   = useState('')
   const [selectedFood, setSelectedFood] = useState<SearchableFood | null>(null)
 
-  // ─── Quantity state (Phase 12B — only active when selectedFood !== null) ─
+  // ─── Quantity state (only active when selectedFood !== null) ───────────
   const [quantity, setQuantity] = useState('')
 
   // Derived
@@ -127,17 +44,6 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
     setProtein(roundMacro(food.protein * factor))
     setCarbs(roundMacro(food.carbs * factor))
     setFat(roundMacro(food.fat * factor))
-    setCalError('')
-  }
-
-  // ─── Helpers ──────────────────────────────────────────────────────────
-
-  function fillForm(cal: number, pro: number, car: number, f: number, name: string) {
-    setCalories(String(cal))
-    setProtein(String(pro))
-    setCarbs(String(car))
-    setFat(String(f))
-    setLabel(name)
     setCalError('')
   }
 
@@ -167,39 +73,6 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
     setLabel('')
     setCalError('')
   }
-
-  // Shortcut chips: personalized from recents → favorites → my foods → fallback
-  function applyPreset(chip: QuickChip) {
-    fillForm(chip.calories, chip.protein, chip.carbs, chip.fat, chip.name)
-    setSelectedFood(null)
-    setQuantity('')
-    setSearchQuery('')
-  }
-
-  // Respect onboarding exclusions for the static fallback tier only.
-  // When the user has real behavioral data the fallback tier is never reached.
-  const excludedIds = (() => {
-    const prefs = user?.foodPreferences
-    const excluded = new Set((prefs?.excludedFoods ?? []).map(e => e.toLowerCase()))
-    const exclusionMap: Record<string, string[]> = {
-      dairy:      ['greek_yogurt', 'cottage_cheese', 'cheese', 'whey_protein'],
-      eggs:       ['eggs'],
-      nuts:       ['almonds', 'peanut_butter'],
-      soy:        ['whey_protein'],
-      gluten:     ['bread', 'pasta', 'oats'],
-      'red meat': ['ground_beef'],
-    }
-    const blocked = new Set<string>()
-    for (const [excl, foodIds] of Object.entries(exclusionMap)) {
-      if (excluded.has(excl)) foodIds.forEach(id => blocked.add(id))
-    }
-    return blocked
-  })()
-
-  const filteredRecents   = recents.filter(f => !excludedIds.has(f.id))
-  const filteredFavorites = favorites.filter(f => !excludedIds.has(f.id))
-
-  const shortcuts = buildShortcuts(filteredRecents, filteredFavorites, myFoods)
 
   // ─── Submit ────────────────────────────────────────────────────────────
   function handleSubmit() {
@@ -234,7 +107,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
       return
     }
 
-    // ── Manual / chip-preset path (no search food selected) ───────────────
+    // ── Manual path (no search food selected) ─────────────────────────────
     const cal = Math.round(parseFloat(calories))
     if (!calories || isNaN(cal) || cal <= 0) {
       setCalError('Enter a calorie amount')
@@ -265,8 +138,6 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
   return (
     <>
       <div className={styles.scrollContent}>
-        <p className={styles.hint}>Fast macro entry — nothing saved to your food library.</p>
-
         {/* ── Search field ── */}
         <div className={styles.searchWrap}>
           <div className={styles.searchRow}>
@@ -296,7 +167,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
             )}
           </div>
 
-          {/* Selected food badge + quantity input (Phase 12B) */}
+          {/* Selected food badge + quantity input */}
           {selectedFood !== null && (
             <>
               <div className={styles.selectedBadge}>
@@ -345,24 +216,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
           )}
         </div>
 
-        {/* Personalized shortcut chips */}
-        {shortcuts.length > 0 && (
-          <div className={styles.presets}>
-            {shortcuts.map(chip => (
-              <button
-                key={chip.id}
-                type="button"
-                className={styles.presetChip}
-                onClick={() => applyPreset(chip)}
-              >
-                {chip.name}
-                <span className={styles.presetCal}>{chip.calories} kcal</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Direct-entry fields (unchanged — auto-filled when food is selected) */}
+        {/* Direct-entry fields — auto-filled when a food is selected from search */}
         <Input
           label="Calories"
           value={calories}

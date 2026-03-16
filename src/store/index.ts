@@ -86,6 +86,7 @@ interface AppActions {
   // Templates
   saveTemplate(template: MealTemplate): void
   deleteTemplate(id: string): void
+  updateTemplate(template: MealTemplate): void
   applyTemplate(templateId: string, date: string): void
 
   // Food input sheet
@@ -296,6 +297,11 @@ export const useStore = create<AppStore>()(
       deleteTemplate: (id) =>
         set((state) => ({
           templates: state.templates.filter((t) => t.id !== id),
+        })),
+
+      updateTemplate: (template) =>
+        set((state) => ({
+          templates: state.templates.map((t) => (t.id === template.id ? template : t)),
         })),
 
       applyTemplate: (templateId, date) =>

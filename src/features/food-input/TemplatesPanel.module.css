@@ -25,7 +25,7 @@
   line-height: var(--leading-normal);
 }
 
-/* ─── Template row ─── */
+/* ─── Template list row ─── */
 
 .row {
   display: flex;
@@ -68,6 +68,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+.metaHint {
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+  font-weight: var(--weight-medium);
+}
+
 .deleteBtn {
   flex-shrink: 0;
   width: 44px;
@@ -80,8 +86,134 @@
   font-size: 0.85rem;
   cursor: pointer;
   transition: color var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .deleteBtn:active {
   color: var(--color-danger, #e05555);
+}
+
+/* ─── Use-template view ─── */
+
+.useScroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--space-4);
+}
+
+.useFooter {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.useHeader {
+  padding: 0 var(--space-4) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.useTitle {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.useHint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ─── Ingredient rows ─── */
+
+.ingredientRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.ingredientRow:last-of-type {
+  border-bottom: none;
+}
+
+.ingredientName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+}
+
+.ingredientInputRow {
+  /* constrains the Input to not expand full-width unnecessarily */
+  max-width: 200px;
+}
+
+.ingredientMacros {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Live totals ─── */
+
+.totalRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.totalLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.totalMacros {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Feedback messages ─── */
+
+.logError {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-danger, #e05555);
+}
+
+.savedMsg {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-success, #4caf50);
+  font-weight: var(--weight-medium);
 }

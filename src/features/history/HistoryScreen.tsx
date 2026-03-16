@@ -5,24 +5,9 @@ import { Header } from '../../components/layout/Header'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { sumMacros } from '../../domain/calculations'
 import { formatCalories } from '../../utils/format'
-import { toDateKey, fromDateKey } from '../../utils/date'
+import { dateLabel } from '../../utils/date'
 import type { MacroSnapshot } from '../../domain/types'
 import styles from './HistoryScreen.module.css'
-
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
-function fmtDayLabel(dateKey: string): string {
-  const today     = toDateKey()
-  const yesterday = toDateKey(new Date(Date.now() - 86_400_000))
-  if (dateKey === today)     return 'Today'
-  if (dateKey === yesterday) return 'Yesterday'
-  const d = fromDateKey(dateKey)
-  return d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month:   'short',
-    day:     'numeric',
-  })
-}
 
 interface DaySummary {
   date:       string
@@ -70,7 +55,7 @@ export function HistoryScreen() {
           return (
             <div key={date} className={styles.dayCard}>
               <div className={styles.dayCardTop}>
-                <span className={styles.dayCardLabel}>{fmtDayLabel(date)}</span>
+                <span className={styles.dayCardLabel}>{dateLabel(date)}</span>
                 <span className={styles.dayCardKcal}>
                   {formatCalories(totals.calories)}
                   <span className={styles.dayCardKcalTarget}>

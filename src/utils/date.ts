@@ -21,7 +21,7 @@ export function dateLabel(key: string): string {
   if (key === yesterday) return 'Yesterday'
 
   const date = fromDateKey(key)
-  return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
 /** Short label for compact views (Today / Mon 12 / etc.) */

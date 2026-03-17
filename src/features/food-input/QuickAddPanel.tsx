@@ -1,21 +1,71 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useStore, selectActiveDate } from '../../store'
 import type { FoodInputContext } from '../../services/foodInput/FoodInputService'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { MealSlotPicker } from './MealSlotPicker'
 import { generateId } from '../../utils/id'
+import { toDateKey } from '../../utils/date'
+import { MEAL_SLOT_LABELS } from '../../domain/constants'
 import { searchFoods, type SearchableFood } from '../../domain/searchFoods'
-import type { FoodItem, MealSlot } from '../../domain/types'
+import type { FoodItem, LoggedFood, MealSlot } from '../../domain/types'
 import styles from './QuickAddPanel.module.css'
 
-// Round to 1 decimal, strip trailing .0 → "31" not "31.0"
+// ─── Recent log-event helpers ─────────────────────────────────────────────
+
+interface RecentEvent {
+  loggedAt:  string
+  date:      string
+  entries:   LoggedFood[]
+  totalKcal: number
+}
+
+function buildRecentEvents(
+  logs: Record<string, LoggedFood[]>,
+  limit = 8,
+): RecentEvent[] {
+  const today     = toDateKey()
+  const yesterday = toDateKey(new Date(Date.now() - 86_400_000))
+
+  // Combine entries from today and yesterday only
+  const entries: LoggedFood[] = [
+    ...(logs[today]     ?? []),
+    ...(logs[yesterday] ?? []),
+  ]
+
+  // Group by exact loggedAt string (batch ops share a timestamp → one event)
+  const groupMap = new Map<string, LoggedFood[]>()
+  for (const entry of entries) {
+    const grp = groupMap.get(entry.loggedAt) ?? []
+    grp.push(entry)
+    groupMap.set(entry.loggedAt, grp)
+  }
+
+  return Array.from(groupMap.entries())
+    .map(([loggedAt, evEntries]) => ({
+      loggedAt,
+      date:      evEntries[0].date,
+      entries:   evEntries,
+      totalKcal: evEntries.reduce((s, e) => s + e.macros.calories, 0),
+    }))
+    .sort((a, b) => b.loggedAt.localeCompare(a.loggedAt))
+    .slice(0, limit)
+}
+
+// ─── Round to 1 decimal, strip trailing .0 → "31" not "31.0" ─────────────
 function roundMacro(v: number): string {
   const r = Math.round(v * 10) / 10
   return r % 1 === 0 ? String(Math.round(r)) : String(r)
 }
 
-export function QuickAddPanel({ onConfirm }: FoodInputContext) {
-  // ─── Direct-entry state ────────────────────────────────────────────────
+// ─── Component ────────────────────────────────────────────────────────────
+
+export function QuickAddPanel({ onConfirm, onCancel }: FoodInputContext) {
+  const logs       = useStore(s => s.logs)
+  const activeDate = useStore(selectActiveDate)
+  const addLogEntry = useStore(s => s.addLogEntry)
+
+  // ─── Direct-entry state ──────────────────────────────────────────────
   const [calories, setCalories] = useState('')
   const [protein, setProtein]   = useState('')
   const [carbs, setCarbs]       = useState('')
@@ -24,18 +74,26 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
   const [slot, setSlot]         = useState<MealSlot>('untagged')
   const [calError, setCalError] = useState('')
 
-  // ─── Search state ──────────────────────────────────────────────────────
+  // ─── Search state ────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery]   = useState('')
   const [selectedFood, setSelectedFood] = useState<SearchableFood | null>(null)
-
-  // ─── Quantity state (only active when selectedFood !== null) ───────────
-  const [quantity, setQuantity] = useState('')
+  const [quantity, setQuantity]         = useState('')
 
   // Derived
   const showResults   = searchQuery.length >= 1 && selectedFood === null
   const searchResults = showResults ? searchFoods(searchQuery, 8) : []
+  const showRecent    = !searchQuery && selectedFood === null
 
-  // ─── Scaling helper ────────────────────────────────────────────────────
+  // Recent events from today + yesterday
+  const recentEvents = useMemo(
+    () => buildRecentEvents(logs),
+    [logs],
+  )
+
+  const today = toDateKey()
+
+  // ─── Search helpers ──────────────────────────────────────────────────
+
   function scaleAndFill(food: SearchableFood, qty: string) {
     const q = parseFloat(qty)
     if (!qty.trim() || isNaN(q) || q <= 0) return
@@ -48,7 +106,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
   }
 
   function applySearchFood(food: SearchableFood) {
-    const fullName = [food.name, food.descriptor].filter(Boolean).join(' — ')
+    const fullName   = [food.name, food.descriptor].filter(Boolean).join(' — ')
     const defaultQty = String(food.baseAmount)
     setSelectedFood(food)
     setSearchQuery('')
@@ -74,11 +132,51 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
     setCalError('')
   }
 
-  // ─── Submit ────────────────────────────────────────────────────────────
+  // ─── Repeat / copy-forward helpers ──────────────────────────────────
+
+  /** Pre-fill the direct-entry form from a single logged entry so the user
+   *  can review/adjust the values before submitting. */
+  function handleFillFromEntry(entry: LoggedFood) {
+    setCalories(String(entry.macros.calories))
+    setProtein(String(entry.macros.protein))
+    setCarbs(String(entry.macros.carbs))
+    setFat(String(entry.macros.fat))
+    setLabel(entry.foodItem.name)
+    setSlot(entry.mealSlot)
+    setSelectedFood(null)
+    setSearchQuery('')
+    setCalError('')
+  }
+
+  /** Instantly re-log a group of entries (one or many) as today's date,
+   *  sharing a single new timestamp so they appear as one event in the Log. */
+  function handleInstantLog(entries: LoggedFood[]) {
+    if (entries.length === 0) return
+    const now  = new Date().toISOString()
+    const slot = entries[0].mealSlot
+    if (entries.length === 1) {
+      // Route single-entry repeats through onConfirm so it also adds to Recents
+      onConfirm(entries[0].foodItem, entries[0].quantityG, slot)
+      return
+    }
+    // Multi-entry: add each with a shared loggedAt so they group as one event
+    for (const entry of entries) {
+      addLogEntry({
+        ...entry,
+        id:       generateId(),
+        date:     activeDate,
+        loggedAt: now,
+      })
+    }
+    onCancel()
+  }
+
+  // ─── Submit ──────────────────────────────────────────────────────────
+
   function handleSubmit() {
     const now = new Date().toISOString()
 
-    // ── Search-mode path: normalize to per-100g, use actual quantity ───────
+    // Search-mode path
     if (selectedFood !== null) {
       const q = parseFloat(quantity)
       if (!quantity.trim() || isNaN(q) || q <= 0) {
@@ -86,8 +184,6 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
         return
       }
       setCalError('')
-      // Normalize search food macros to per-100g so templates/meals can
-      // re-scale correctly when a different quantity is entered later.
       const factor100 = 100 / selectedFood.baseAmount
       const food: FoodItem = {
         id: generateId(),
@@ -107,7 +203,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
       return
     }
 
-    // ── Manual path (no search food selected) ─────────────────────────────
+    // Manual path
     const cal = Math.round(parseFloat(calories))
     if (!calories || isNaN(cal) || cal <= 0) {
       setCalError('Enter a calorie amount')
@@ -121,8 +217,8 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
       macros: {
         calories: cal,
         protein: Math.max(0, parseFloat(protein) || 0),
-        carbs: Math.max(0, parseFloat(carbs) || 0),
-        fat: Math.max(0, parseFloat(fat) || 0),
+        carbs:   Math.max(0, parseFloat(carbs)   || 0),
+        fat:     Math.max(0, parseFloat(fat)      || 0),
       },
       servingSizeG: 100,
       source: 'quickadd',
@@ -138,6 +234,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
   return (
     <>
       <div className={styles.scrollContent}>
+
         {/* ── Search field ── */}
         <div className={styles.searchWrap}>
           <div className={styles.searchRow}>
@@ -188,7 +285,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
             </>
           )}
 
-          {/* Live results */}
+          {/* Live search results */}
           {showResults && (
             <ul className={styles.searchResults} role="listbox">
               {searchResults.length > 0 ? (
@@ -216,7 +313,56 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
           )}
         </div>
 
-        {/* Direct-entry fields — auto-filled when a food is selected from search */}
+        {/* ── Recent entries — copy-forward shortcuts ── */}
+        {showRecent && recentEvents.length > 0 && (
+          <div className={styles.recentSection}>
+            <span className={styles.recentHeader}>Recent</span>
+            {recentEvents.map(event => {
+              const isSingle  = event.entries.length === 1
+              const firstEntry = event.entries[0]
+              const dateCtx   = event.date === today ? 'Today' : 'Yesterday'
+              const slotLabel = MEAL_SLOT_LABELS[firstEntry.mealSlot]
+
+              return (
+                <div key={event.loggedAt} className={styles.recentRow}>
+                  {/* Row body: pre-fills form (single) or shows event info */}
+                  <button
+                    type="button"
+                    className={styles.recentRowBody}
+                    onClick={() =>
+                      isSingle
+                        ? handleFillFromEntry(firstEntry)
+                        : handleInstantLog(event.entries)
+                    }
+                  >
+                    <span className={styles.recentName}>
+                      {isSingle
+                        ? firstEntry.foodItem.name
+                        : `${event.entries.length}\u2009foods`}
+                    </span>
+                    <span className={styles.recentMeta}>
+                      {isSingle
+                        ? `${firstEntry.quantityG}\u2009g · ${slotLabel} · ${dateCtx}`
+                        : `${slotLabel} · ${dateCtx}`}
+                    </span>
+                  </button>
+
+                  {/* "+" button: instant re-log (preserves exact entry/entries) */}
+                  <button
+                    type="button"
+                    className={styles.recentLogBtn}
+                    onClick={() => handleInstantLog(event.entries)}
+                    aria-label={`Log ${isSingle ? firstEntry.foodItem.name : 'meal'} again`}
+                  >
+                    +
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* ── Direct-entry fields ── */}
         <Input
           label="Calories"
           value={calories}
@@ -259,6 +405,7 @@ export function QuickAddPanel({ onConfirm }: FoodInputContext) {
         />
         <MealSlotPicker value={slot} onChange={setSlot} />
       </div>
+
       <div className={styles.footer}>
         <Button variant="primary" size="lg" full onClick={handleSubmit}>
           Quick Log
